@@ -12,6 +12,8 @@
 #include "driverlib/interrupt.h"
 #include "PERIPHERALS.h"
 
+#include "driverlib/sysctl.h"
+#include "inc/hw_memmap.h"
 
 /*
  * Macro Definitions:

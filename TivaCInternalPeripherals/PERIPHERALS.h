@@ -12,7 +12,6 @@
 #include "driverlib/sysctl.h"
 #include "inc/hw_memmap.h"
 
-
 #define GPIO_PERIPHERAL_COUNT       6
 
 /*
