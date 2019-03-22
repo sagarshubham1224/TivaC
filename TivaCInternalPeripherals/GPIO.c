@@ -25,7 +25,7 @@
 GPIO* initGPIO(GPIO *gpioPointer,GPIO_PIN_CODE GPIOPinCode,uint8_t pinType)
 {
     char GPIOPortLetter = getGPIOPortLetter(GPIOPinCode) ;
-    char pinNumber = getPinNumber(GPIOPinCode) ;
+    uint8_t pinNumber = getPinNumber(GPIOPinCode) ;
     gpioPointer->GPIOBase           = getGPIOBaseAddress(GPIOPortLetter);
     gpioPointer->pinNumber      = pinNumber;
     gpioPointer->pin            = 1 << pinNumber;
