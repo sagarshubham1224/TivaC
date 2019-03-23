@@ -3,7 +3,7 @@
 
 volatile static uint64_t ticks = 0;
 
-TIMERDEVICE systemTimer ;
+static TIMERDEVICE systemTimer ;
 
 
 
@@ -49,7 +49,7 @@ extern void initSystemTimer(void)
 //    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 //
 //    TimerEnable(TIMER0_BASE, TIMER_A);
-    initTimerFullWidthPeriodic(&systemTimer, TIMER1, SYSTEM_TIMER_FREQUENCY, systemTimerInterruptHandler) ;
+    initTimerFullWidthPeriodic(&systemTimer, TIMER0, SYSTEM_TIMER_FREQUENCY, systemTimerInterruptHandler) ;
 }
 /*
  * Function to get number of milliseconds since last reboot.
