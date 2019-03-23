@@ -135,7 +135,7 @@ typedef enum UART_PERIPHERAL {
 /*
  * Array to hold UART GPIO Pin address according to UART pins.
  */
-static const uint32_t ui32UARTPinsAddressArray[8] = {
+static const uint32_t ui32UARTPinsAddressArray[UART_PERIPHERAL_COUNT] = {
                                                      GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_0|GPIO_PIN_1,
                                                      GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_6|GPIO_PIN_7,
                                                      GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_4|GPIO_PIN_5,
@@ -146,7 +146,7 @@ static const uint32_t ui32UARTPinsAddressArray[8] = {
 /*
  * Array to hold UART Interrupt Assignments according to UART Number.
  */
-static const uint32_t ui32UARTInterruptsAddressArray[8] = {
+static const uint32_t ui32UARTInterruptsAddressArray[UART_PERIPHERAL_COUNT] = {
                                                            INT_UART0, INT_UART1,
                                                            INT_UART2, INT_UART3,
                                                            INT_UART4, INT_UART5,
@@ -156,7 +156,7 @@ static const uint32_t ui32UARTInterruptsAddressArray[8] = {
 /*
  * Array to hold UART Module Base Address UARTX_BASE, where X can be 0, 1, 2, 3, 4, 5, 6, or 7.
  */
-static const uint32_t ui32UARTBaseAddressArray[8] = {
+static const uint32_t ui32UARTBaseAddressArray[UART_PERIPHERAL_COUNT] = {
                                                      UART0_BASE, UART1_BASE, UART2_BASE, UART3_BASE,
                                                      UART4_BASE, UART5_BASE, UART6_BASE, UART7_BASE
 };
@@ -164,7 +164,7 @@ static const uint32_t ui32UARTBaseAddressArray[8] = {
 /*
  * Array to hold UART Module Peripheral Address SYSCTL_PERIPH_UARTX, where X can be 0, 1, 2, 3, 4, 5, 6, or 7.
  */
-static const uint32_t ui32UARTPeripheralAddressArray[8] = {
+static const uint32_t ui32UARTPeripheralAddressArray[UART_PERIPHERAL_COUNT] = {
                                                            SYSCTL_PERIPH_UART0, SYSCTL_PERIPH_UART1, SYSCTL_PERIPH_UART2, SYSCTL_PERIPH_UART3,
                                                            SYSCTL_PERIPH_UART4, SYSCTL_PERIPH_UART5, SYSCTL_PERIPH_UART6, SYSCTL_PERIPH_UART7
 };
@@ -172,7 +172,7 @@ static const uint32_t ui32UARTPeripheralAddressArray[8] = {
 /*
  * Array to hold GPIO Base Address GPIO_PORTX_BASE, where X can be Port A, B, D, C, or E.
  */
-static const uint32_t ui32UARTGPIOBaseAddressArray[8] = {
+static const uint32_t ui32UARTGPIOBaseAddressArray[UART_PERIPHERAL_COUNT] = {
                                                          GPIO_PORTA_BASE, GPIO_PORTB_BASE, GPIO_PORTD_BASE, GPIO_PORTC_BASE,
                                                          GPIO_PORTC_BASE, GPIO_PORTE_BASE, GPIO_PORTD_BASE, GPIO_PORTE_BASE
 };
@@ -180,7 +180,7 @@ static const uint32_t ui32UARTGPIOBaseAddressArray[8] = {
 /*
  * Array to hold GPIO Peripheral Address SYSCTL_PERIPH_GPIOX, where X can be Port A, B, D, C, or E.
  */
-static const uint32_t ui32UARTGPIOPeripheralAddressArray[8] = {
+static const uint32_t ui32UARTGPIOPeripheralAddressArray[UART_PERIPHERAL_COUNT] = {
                                                                SYSCTL_PERIPH_GPIOA, SYSCTL_PERIPH_GPIOB, SYSCTL_PERIPH_GPIOD, SYSCTL_PERIPH_GPIOC,
                                                                SYSCTL_PERIPH_GPIOC, SYSCTL_PERIPH_GPIOE, SYSCTL_PERIPH_GPIOD, SYSCTL_PERIPH_GPIOE
 };
@@ -188,11 +188,13 @@ static const uint32_t ui32UARTGPIOPeripheralAddressArray[8] = {
 /*
  * Array to hold Alternative Pin Function Address according to UART pins.
  */
-static const uint32_t ui32UARTPinsAltAddressArray[8][2] = {
+static const uint32_t ui32UARTPinsAltAddressArray[UART_PERIPHERAL_COUNT][2] = {
                                                            {GPIO_PA0_U0RX,GPIO_PA1_U0TX}, {GPIO_PB0_U1RX,GPIO_PB1_U1TX},
                                                            {GPIO_PD6_U2RX,GPIO_PD7_U2TX}, {GPIO_PC6_U3RX,GPIO_PC7_U3TX},
                                                            {GPIO_PC4_U4RX,GPIO_PC5_U4TX}, {GPIO_PE4_U5RX,GPIO_PE5_U5TX},
                                                            {GPIO_PD4_U6RX,GPIO_PD5_U6TX}, {GPIO_PE0_U7RX,GPIO_PE1_U7TX}
 };
+
+static const uint32_t ui32TIMERPeripheralAddressArray
 #endif
 #endif
