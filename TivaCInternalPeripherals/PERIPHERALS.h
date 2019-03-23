@@ -195,6 +195,78 @@ static const uint32_t ui32UARTPinsAltAddressArray[UART_PERIPHERAL_COUNT][2] = {
                                                            {GPIO_PD4_U6RX,GPIO_PD5_U6TX}, {GPIO_PE0_U7RX,GPIO_PE1_U7TX}
 };
 
-static const uint32_t ui32TIMERPeripheralAddressArray
+/*
+ * TIMER PERIPHERAL ELEMENTS
+ */
+/*
+ * TODO : ADD Functionality for wide timers.
+ * TODO : ADD CCP Mode use.
+ * TODO : ADD Half Width use.
+ */
+#define TIMER_PERIPHERAL_COUNT          6
+#define WIDE_TIMER_PERIPHERAL_COUNT     6
+
+/*
+ * Array to hold TIMER PERIPHERAL Address SYSCTL_PERIPH_TIMERX where X is [0,TIMER_PERIPHERAL_COUNT-1]
+ */
+static const uint32_t ui32TIMERPeripheralAddressArray[TIMER_PERIPHERAL_COUNT] = {
+                                                                                 SYSCTL_PERIPH_TIMER0,SYSCTL_PERIPH_TIMER1,
+                                                                                 SYSCTL_PERIPH_TIMER2,SYSCTL_PERIPH_TIMER3,
+                                                                                 SYSCTL_PERIPH_TIMER4,SYSCTL_PERIPH_TIMER5
+};
+
+/*
+ * Array to hold WIDE TIMER PERIPHERAL Address SYSCTL_PERIPH_WTIMERX where X is [0,WIDE_TIMER_PERIPHERAL_COUNT-1]
+ */
+static const uint32_t ui32WTIMERPeripheralAddressArray[WIDE_TIMER_PERIPHERAL_COUNT] = {
+                                                                                 SYSCTL_PERIPH_WTIMER0,SYSCTL_PERIPH_WTIMER1,
+                                                                                 SYSCTL_PERIPH_WTIMER2,SYSCTL_PERIPH_WTIMER3,
+                                                                                 SYSCTL_PERIPH_WTIMER4,SYSCTL_PERIPH_WTIMER5
+};
+
+/*
+ * Array to hold TIMER Base Address TIMERX_BASE where X is [0,TIMER_PERIPHERAL_COUNT-1]
+ */
+static const uint32_t ui32TIMERBaseAddressArray[TIMER_PERIPHERAL_COUNT] = {
+                                                                           TIMER0_BASE, TIMER1_BASE,
+                                                                           TIMER2_BASE, TIMER3_BASE,
+                                                                           TIMER4_BASE, TIMER5_BASE
+};
+
+/*
+ * Array to hold Wide TIMER Base Address WTIMERX_BASE where X is [0,TIMER_PERIPHERAL_COUNT-1]
+ */
+static const uint32_t ui32WTIMERBaseAddressArray[WIDE_TIMER_PERIPHERAL_COUNT] = {
+                                                                           WTIMER0_BASE, WTIMER1_BASE,
+                                                                           WTIMER2_BASE, WTIMER3_BASE,
+                                                                           WTIMER4_BASE, WTIMER5_BASE
+};
+
+/*
+ * Enum for using different timers in 32 bit operation
+ * TODO : Add enum for 16 bit operations as well.
+ */
+typedef enum TIMER_PERIPHERAL {
+    TIMER0 = 0,
+    TIMER1 = 1,
+    TIMER2 = 2,
+    TIMER3 = 3,
+    TIMER4 = 4,
+    TIMER5 = 5
+}TIMER_PERIPHERAL;
+
+/*
+ * Enum for using different timers in 32 bit operation
+ * TODO : Add enum for 16 bit operations as well.
+ */
+typedef enum WIDE_TIMER_PERIPHERAL {
+    WIDE_TIMER0 = 0,
+    WIDE_TIMER1 = 1,
+    WIDE_TIMER2 = 2,
+    WIDE_TIMER3 = 3,
+    WIDE_TIMER4 = 4,
+    WIDE_TIMER5 = 5
+}WIDE_TIMER_PERIPHERAL;
+
 #endif
 #endif
