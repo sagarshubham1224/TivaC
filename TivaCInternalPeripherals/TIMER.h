@@ -51,6 +51,16 @@ typedef struct TIMERDEVICE {
  */
 extern void initSystemTimer(void);
 
+/*
+ * Function to initialize a 32 bit timer as full width periodic timer.
+ * Arguments:
+ *  TIMERDEVICE *TIMERDEVICEPointer             :: Pointer to TIMERDEVICE struct.
+ *  TIMER_PERIPHERAL timerNumber                :: Timer Number to be used.
+ *  uint16_t timerEvenRepeatFrequency           :: Frequency of timer event in Hz.
+ *  void (*timerEventFunction)(void)            :: Pointer to timerEvent Function of specified type.
+ * Returns:
+ *  none.
+ */
 extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
                                        TIMER_PERIPHERAL timerNumber,
                                        uint16_t timerEventRepeatFrequency,

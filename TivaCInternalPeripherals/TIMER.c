@@ -13,7 +13,16 @@ static TIMERDEVICE systemTimer ;
 
 
 
-
+/*
+ * Function to initialize a 32 bit timer as full width periodic timer.
+ * Arguments:
+ *  TIMERDEVICE *TIMERDEVICEPointer             :: Pointer to TIMERDEVICE struct.
+ *  TIMER_PERIPHERAL timerNumber                :: Timer Number to be used.
+ *  uint16_t timerEvenRepeatFrequency           :: Frequency of timer event in Hz.
+ *  void (*timerEventFunction)(void)            :: Pointer to timerEvent Function of specified type.
+ * Returns:
+ *  none.
+ */
 extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
                                        TIMER_PERIPHERAL timerNumber,
                                        uint16_t timerEventRepeatFrequency,
@@ -41,14 +50,6 @@ extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
  */
 extern void initSystemTimer(void)
 {
-//    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-//    SysCtlDelay(3);
-//    TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
-//    TimerLoadSet(TIMER0_BASE, TIMER_A, SysCtlClockGet()/1000/TIMING_FACTOR-1);
-//    TimerIntRegister(TIMER0_BASE, TIMER_A,systemTimerInterruptHandler);
-//    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-//
-//    TimerEnable(TIMER0_BASE, TIMER_A);
     initTimerFullWidthPeriodic(&systemTimer, TIMER0, SYSTEM_TIMER_FREQUENCY, systemTimerInterruptHandler) ;
 }
 /*
