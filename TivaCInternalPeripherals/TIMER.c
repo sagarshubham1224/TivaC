@@ -73,7 +73,7 @@ extern uint64_t millis(void)
  * Returns:
  *  uint64_t ticks                              :: Number of ticks since last reboot.
  */
-uint64_t getSystemTicks(void)
+extern uint64_t getSystemTicks(void)
 {
     return ticks;
 }
