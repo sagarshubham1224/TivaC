@@ -1,0 +1,128 @@
+/*
+ * TIMER.h
+ * File Description:
+ * File to hold TIMER related functions.
+ */
+
+#ifndef TIMER_H_
+#define TIMER_H_
+#include <stdint.h>
+#include <stdbool.h>
+
+
+#include "inc/hw_memmap.h"
+
+#include "driverlib/sysctl.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/gpio.h"
+#include "driverlib/timer.h"
+#include "inc/hw_timer.h"
+#include "PERIPHERALS.h"
+
+
+
+/*
+ * Macro Definitions
+ */
+//#define TIMING_FACTOR   4
+#define SYSTEM_TIMER_FREQUENCY        4000 //250 useconds. Good enough for most purposes.
+
+
+typedef struct TIMERDEVICE {
+    uint32_t TIMERBase ;
+    uint16_t timerEventRepeatFrequency ;
+    void (*timeEventFunction)(void) ;
+}TIMERDEVICE;
+
+
+
+/*
+ * Functions:
+ */
+
+//public non-static extern Functions:
+
+/*
+ * Function to initiate TIMER 0
+ * Arguments:
+ *  none.
+ * Returns:
+ *  none.
+ */
+extern void initSystemTimer(void);
+
+extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
+                                       TIMER_PERIPHERAL timerNumber,
+                                       uint16_t timerEventRepeatFrequency,
+                                       void (*timerEventFunction)(void)) ;
+
+/*
+ * Function to get number of milliseconds since last reboot.
+ * Arguments:
+ *  none.
+ * Returns:
+ *  uint64_t milliSeconds                       :: Number of millisecond since last reboot.
+ */
+extern uint64_t millis(void);
+
+/*
+ * Function to get number of ticks generated since last reboot.
+ * 1 tick is equivalent to (TIMING_FACTOR) / (System Clock Frequency in Hz) seconds.
+ * 1 tick is 250 microseconds by Default (4000 / 80000000) seconds.
+ * Arguments:
+ *  none.
+ * Returns:
+ *  uint64_t ticks                              :: Number of ticks since last reboot.
+ */
+uint64_t getSystemTicks(void);
+
+/*
+ * Function to generate delay in ticks
+ * Arguments:
+ *  uint64_t delayTimeInTicks           :: amount of ticks for which delay is needed.
+ * Returns:
+ *  none.
+ */
+extern void systemTicksDelay(uint64_t delayTimeInTicks);
+
+/*
+ * Function to generate delay in milliseconds
+ * Arguments:
+ *  uint64_t delayTimeInMilliSeconds            :: amount of time for which delay is needed.
+ * Returns:
+ *  none.
+ */
+extern void milliSecondDelay(uint64_t delayTimeInMilliSeconds);
+
+
+//private static non-extern Functions:
+
+/*
+ * Function to handle Timer0 Interrupts and increase ticks.
+ * Arguments:
+ *  none.
+ * Returns:
+ *  none.
+ */
+static void systemTimerInterruptHandler(void);
+
+/*
+ * Function to get Timer Peripheral address from ui32TIMERPeripheralAddressArray.
+ * Arguments:
+ *  TIMER_PERIPHERAL timerNumber        :: TIMERX where X is [0,TIMER_PERIPHERAL_COUNT-1].
+ * Returns:
+ *  uint32_t TIMER peripheral address.
+ *  TODO : implement similar function for wide timers.
+ */
+static uint32_t getTimerPeripheralAddress(TIMER_PERIPHERAL timerNumber) ;
+
+/*
+ * Function to get Timer Base address from ui32TIMERBaseAddressArray.
+ * Arguments:
+ *  TIMER_PERIPHERAL timerNumber        :: TIMERX where X is [0,TIMER_PERIPHERAL_COUNT-1].
+ * Returns:
+ *  uint32_t TIMER base address.
+ *  TODO : implement similar function for wide timers.
+ */
+static uint32_t getTimerBaseAddress(TIMER_PERIPHERAL timerNumber) ;
+#endif
