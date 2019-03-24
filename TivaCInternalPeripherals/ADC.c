@@ -7,13 +7,7 @@
 static uint8_t sequencerPriorityDistributor = 0;
 
 
-static const uint32_t ui32ADCBaseAddressArray[2] = {
-        ADC0_BASE, ADC1_BASE
-};
 
-static const uint32_t ui32ADCPeripheralAddressArray[2] = {
-        SYSCTL_PERIPH_ADC0, SYSCTL_PERIPH_ADC1
-};
 
 /*
  * There are two ADC Modules in TM4C123GH6PM. ADC0 and ADC1.
@@ -38,99 +32,114 @@ static const uint32_t ui32ADCPeripheralAddressArray[2] = {
 //public non-static extern Functions.
 
 /*
- * Create and return a Struct Pointer to ADCDATA struct to use as ADC Block.
+ * Setup ADCDEVICE struct to use as ADC Block.
  * Arguments:
- *  ADCData
- *  uint8_t ADCPeripheralNumber                 :: ADC Peripheral Number 0 or 1.
- *  uint32_t ADCSequencerNumber                 :: ADC Sequencer Number, either 0, 1, 2, or 3.
- *  uint32_t ADCTriggerType                     :: ADC Trigger Type. By default macro it is Processor Trigger.
- *  uint32_t *ADCChannelList                    :: Pointer (Array Decayed) to Pins to be used as ADC Pins. Must make sure to have them in order of priority as well as make
- *                                                  sure the length of passed array corresponds to depth of Sequencer selected.
- *  uint32_t *ADCDataArrayPointer               :: Pointer to Data Array in which ADC Captured Data is to be stored.
+ *  ADCDEVICE* ADCDEVICEPointer                 :: Pointer to ADCDEVICE struct.
+ *  ADC_PERIPHERAL ADCPeripheralNumber          :: ADC Peripheral Number ADC0 or ADC1.
+ *  ADC_SEQUENCER ADCSequencerNumber            :: ADC Sequencer Number, ADC_SEQX, X is [0,3].
+ *  ADC_TRIGGER_TYPE ADCTriggerType             :: ADC Trigger Type.
+ *                                                 initADCDEVICE sets up the device for ADC_TRIGGER_PROCESSOR
+ *  uint8_t ADCPinCount                         :: Number of pins in ADC Block, must be lower than or equal to the
+ *                                                 maximum depth of selected ADCSequencer.
+ *  ADC_PINS *ADCChannelList                    :: Pointer (Array Decayed) to Pins to be used as ADC Pins.
+ *                                                 The length of this array should be equal to ADCPinCount.
+ *                                                 Must make sure to have them in order of priority.
+ *                                                 Also, the sequencer should be deep enough to support all the pins.
+ *  uint32_t *ADCDEVICEDataArrayPointer         :: Pointer to Data Array in which ADC Captured Data is to be stored.
+ *                                                 The length of this array should be equal to ADCPinCount.
  * Returns:
- *  ADCDATA* ADCDataBlockPointer                :: Pointer to ADCDATA struct
- *
+ *  none.
  */
-ADCData* initADCBlock(  ADCData* ADCBlockPointer,       uint32_t ADCPeripheralNumber,
-                        uint32_t ADCSequencerNumber,    uint32_t ADCTriggerType,
-                        uint32_t* ADCChannelList,       uint32_t* ADCDatatArray)
+void initADCDEVICE(  ADCDEVICE* ADCDEVICEPointer,       ADC_PERIPHERAL ADCPeripheralNumber,
+                     ADC_SEQUENCER ADCSequencerNumber,  ADC_TRIGGER_TYPE ADCTriggerType,
+                     uint8_t ADCPinCount,               ADC_PINS* ADCChannelList,
+                     uint32_t* ADCDEVICEDataArrayPointer)
 {
-    ADCBlockPointer->ADCBase = getADCBaseAddress(ADCPeripheralNumber);
-    ADCBlockPointer->ADCSequenceNumber = ADCSequencerNumber;
-    ADCBlockPointer->ADCDataArrayPointer = ADCDatatArray;
+    ADCDEVICEPointer->ADCBase = getADCBaseAddress(ADCPeripheralNumber);
+    ADCDEVICEPointer->ADCSequenceNumber = (uint8_t)ADCSequencerNumber;
+    ADCDEVICEPointer->ADCDEVICEDataArrayPointer = ADCDEVICEDataArrayPointer;
     uint8_t looper = 0;
-    uint8_t ADCDataArraySize = 0;
-    ADCDataArraySize = getADCDataArraySize(ADCSequencerNumber);
+    uint32_t ADCPinsPeripheralAddress = 0, ADCPinsBaseAddress = 0 ;
+    uint8_t ADCPINNumber = 0 ;
 
 
     SysCtlPeripheralEnable(getADCPeripheralAddress(ADCPeripheralNumber));
-    SysCtlDelay(10);
-
-    ADCSequenceConfigure(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber, ADCTriggerType, dispatchADCSequencerPriority());
-
-    ADCIntClear(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber);
-
-    for(looper=0; looper<ADCDataArraySize-1; ++looper)
+    while(!SysCtlPeripheralReady(getADCPeripheralAddress(ADCPeripheralNumber)));
+    for (looper = 0; looper < ADCPinCount; ++ looper)
     {
-        ADCSequenceStepConfigure(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber, looper, ADCChannelList[looper]);
+        getADCPinsData(ADCChannelList[looper], &ADCPinsPeripheralAddress, &ADCPinsBaseAddress, &ADCPINNumber) ;
+        if(!SysCtlPeripheralReady(ADCPinsPeripheralAddress))
+        {
+            SysCtlPeripheralEnable(ADCPinsPeripheralAddress) ;
+            while(!SysCtlPeripheralReady(ADCPinsPeripheralAddress));
+        }
+        GPIOPinTypeADC(ADCPinsBaseAddress, ADCPINNumber) ;
     }
 
-    ADCSequenceStepConfigure(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber, looper, (ADC_CTL_IE | ADC_CTL_END | ADCChannelList[looper]) );
+    ADCSequenceConfigure(ADCDEVICEPointer->ADCBase, ADCDEVICEPointer->ADCSequenceNumber, ADCTriggerType, dispatchADCSequencerPriority());
 
-    ADCSequenceEnable(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber);
+    ADCIntClear(ADCDEVICEPointer->ADCBase,ADCDEVICEPointer->ADCSequenceNumber);
 
-    ADCIntClear(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber);
+    for(looper=0; looper<ADCPinCount-1; ++looper)
+    {
+        ADCSequenceStepConfigure(ADCDEVICEPointer->ADCBase, ADCDEVICEPointer->ADCSequenceNumber, looper, ADCChannelList[looper]);
+    }
 
-    return ADCBlockPointer;
+    ADCSequenceStepConfigure(ADCDEVICEPointer->ADCBase, ADCDEVICEPointer->ADCSequenceNumber, looper, (ADC_CTL_IE | ADC_CTL_END | ADCChannelList[looper]) );
+
+    ADCSequenceEnable(ADCDEVICEPointer->ADCBase,ADCDEVICEPointer->ADCSequenceNumber);
+
+    ADCIntClear(ADCDEVICEPointer->ADCBase, ADCDEVICEPointer->ADCSequenceNumber);
+
 }
 
 /*
  * Function to read ADC Block.
  * Arguments:
- *  ADCData* ADCBlockPointer                    :: Pointer to struct of ADC Block. Data will be stored with help of the struct's uint32_t *ADCDataArrayPointer member.
+ *  ADCDEVICE* ADCBlockPointer                    :: Pointer to struct of ADC Block. Data will be stored with help of the struct's uint32_t *ADCDEVICEDataArrayPointer member.
  * Returns:
  * none.
  */
-void analogRead(ADCData* ADCBlockPointer)
+void analogRead(ADCDEVICE* ADCBlockPointer)
 {
     ADCProcessorTrigger(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber);
     while(!ADCIntStatus(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber, false));
-    ADCSequenceDataGet(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber, ADCBlockPointer->ADCDataArrayPointer);
+    ADCSequenceDataGet(ADCBlockPointer->ADCBase, ADCBlockPointer->ADCSequenceNumber, ADCBlockPointer->ADCDEVICEDataArrayPointer);
 }
 
 /*
  * Read a single pin in ADC Block.
  * Arguments:
- *  ADCData* ADCBlockPointer                    :: Pointer to struct of ADC Block.
+ *  ADCDEVICE* ADCBlockPointer                    :: Pointer to struct of ADC Block.
  *  uint8_t pinNum                              :: Pin Number according to ADC Block's Data Array.
  * Returns:
  *  uint32_t analog Pin's Value                 :: Value corresponding to read ADC Value at particular pin.
  */
-uint32_t analogReadPin(ADCData* ADCBlockPointer,uint8_t pinNum)
+uint32_t analogReadPin(ADCDEVICE* ADCBlockPointer,uint8_t pinNum)
 {
     ADCProcessorTrigger(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber);
     while(!ADCIntStatus(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber,false));
-    ADCSequenceDataGet(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber,ADCBlockPointer->ADCDataArrayPointer);
-    return ADCBlockPointer->ADCDataArrayPointer[pinNum];
+    ADCSequenceDataGet(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber,ADCBlockPointer->ADCDEVICEDataArrayPointer);
+    return ADCBlockPointer->ADCDEVICEDataArrayPointer[pinNum];
 }
 
 
 /*
  * Read a single Pin scaled to a range.
  * Arguments:
- *  ADCData* ADCBlockPointer                    :: Pointer to struct of ADC Block.
+ *  ADCDEVICE* ADCBlockPointer                    :: Pointer to struct of ADC Block.
  *  uint8_t pinNum                              :: Pin Number according to ADC Block's Data Array.
  *  uint16_t minVal                             :: Lower Limit of range.
  *  uint32_t maxVal                             :: Upper Limit of range.
  * Returns:
  *  uint32_t scaled analog Pin's Value          :: Value corresponding to read ADC Value at particular pin.
  */
-uint32_t analogReadPinScaled(ADCData* ADCBlockPointer, uint8_t pinNum, uint16_t minVal, uint32_t maxVal)
+uint32_t analogReadPinScaled(ADCDEVICE* ADCBlockPointer, uint8_t pinNum, uint16_t minVal, uint32_t maxVal)
 {
     ADCProcessorTrigger(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber);
     while(!ADCIntStatus(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber,false));
-    ADCSequenceDataGet(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber,ADCBlockPointer->ADCDataArrayPointer);
-    return ((ADCBlockPointer->ADCDataArrayPointer[pinNum]-minVal)*(maxVal-minVal))/4096 + minVal;
+    ADCSequenceDataGet(ADCBlockPointer->ADCBase,ADCBlockPointer->ADCSequenceNumber,ADCBlockPointer->ADCDEVICEDataArrayPointer);
+    return ((ADCBlockPointer->ADCDEVICEDataArrayPointer[pinNum]-minVal)*(maxVal-minVal))/4096 + minVal;
 }
 
 
@@ -139,56 +148,102 @@ uint32_t analogReadPinScaled(ADCData* ADCBlockPointer, uint8_t pinNum, uint16_t 
 /*
  * Function to return ADC Base according to ADC Peripheral Number.
  * Arguments:
- *  uint8_t ADCPeripheralNumber                 :: ADC Peripheral Number 0, or 1.
+ *  ADC_PERIPHERAL ADCPeripheralNumber          :: ADC Peripheral Number ADC0, or ADC1.
  * Returns:
  *  uint32_t ADCBaseAddress                     :: Based on ADC Peripheral Number, ADC0_BASE, or ADC1_BASE is returned.
  */
-static uint32_t getADCBaseAddress(uint8_t ADCPeripheralNumber)
+static uint32_t getADCBaseAddress(ADC_PERIPHERAL ADCPeripheralNumber)
 {
-    return ui32ADCBaseAddressArray[ADCPeripheralNumber];
+    return ui32ADCBaseAddressArray[(uint8_t)ADCPeripheralNumber];
 }
 
 
 /*
  * Function to return ADC Peripheral Address according to ADC Peripheral Number.
  * Arguments:
- *  uint8_t ADCPeripheralNumber                 :: ADC Peripheral Number 0, or 1.
+ *  ADC_PERIPHERAL ADCPeripheralNumber          :: ADC Peripheral Number ADC0, or ADC1.
  * Returns:
  *  uint32_t ADCPeripheralAddress               :: Based on ADC Peripheral Number, SYSCTL_PERIPH_ADC0, or SYSCTL_PERIPH_ADC0 is returned.
  */
-static uint32_t getADCPeripheralAddress(uint8_t ADCPeripheralNumber)
+static uint32_t getADCPeripheralAddress(ADC_PERIPHERAL ADCPeripheralNumber)
 {
-    return ui32ADCPeripheralAddressArray[ADCPeripheralNumber];
+    return ui32ADCPeripheralAddressArray[(uint8_t)ADCPeripheralNumber];
 }
 
-
 /*
- * Function to return ADCBlock's data array size according to ADC Sequence Number.
+ * Function to get ADC Pins Peripheral, Base and Pin values for enabling them.
  * Arguments:
- *  uint32_t ADCSequencerNumber                 :: Sequencer Number Selected, 0, 1, 2, or 3.
- * Returns:
- *  uint8_t ADC Data Array Size                 :: Size of ADC Data Array Size for ADC Sequencer.
+ *  ADC_PINS ADCPinValue                        :: Value of ADC PIN in form AINx_Pxx
+ *  uint32_t* ADCPeripheralVariablePointer              :: Pointer to variable to store ADC Peripheral address.
+ *  uint32_t* ADCBaseVariablePointer                    :: Pointer to variable to store ADC Base address.
+ *  uint8_t* ADCPinVariableAddress                      :: Pointer to variable to store ADC Pin address.
  */
-static uint8_t getADCDataArraySize(uint32_t ADCSequencerNumber)
+static void getADCPinsData(ADC_PINS ADCPinValue, uint32_t* ADCPeripheralVariablePointer, uint32_t* ADCBaseVariablePointer, uint8_t* ADCPinVariableAddress )
 {
-    uint8_t ADCDataArraySize = 0;
-    switch(ADCSequencerNumber)
-    {
-    case 0:
-        ADCDataArraySize = 8;
-        break;
-    case 1:
-    case 2:
-        ADCDataArraySize = 4;
-        break;
-    case 3:
-    default:
-        ADCDataArraySize = 1;
-        break;
+    switch (ADCPinValue) {
+        case AIN0_PE3:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOE ;
+            *ADCBaseVariablePointer = GPIO_PORTE_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_3 ;
+            break;
+        case AIN1_PE2:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOE ;
+            *ADCBaseVariablePointer = GPIO_PORTE_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_2 ;
+            break;
+        case AIN2_PE1:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOE ;
+            *ADCBaseVariablePointer = GPIO_PORTE_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_1 ;
+            break;
+        case AIN3_PE0:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOE ;
+            *ADCBaseVariablePointer = GPIO_PORTE_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_0 ;
+            break;
+        case AIN4_PD3:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOD ;
+            *ADCBaseVariablePointer = GPIO_PORTD_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_3 ;
+            break;
+        case AIN5_PD2:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOD ;
+            *ADCBaseVariablePointer = GPIO_PORTD_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_2 ;
+            break;
+        case AIN6_PD1:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOD ;
+            *ADCBaseVariablePointer = GPIO_PORTD_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_1 ;
+            break;
+        case AIN7_PD0:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOD ;
+            *ADCBaseVariablePointer = GPIO_PORTD_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_0 ;
+            break;
+        case AIN8_PE5:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOE ;
+            *ADCBaseVariablePointer = GPIO_PORTE_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_5 ;
+            break;
+        case AIN9_PE4:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOE ;
+            *ADCBaseVariablePointer = GPIO_PORTE_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_4 ;
+            break;
+        case AIN10_PB4:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOB ;
+            *ADCBaseVariablePointer = GPIO_PORTB_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_4 ;
+            break;
+        case AIN11_PB5:
+            *ADCPeripheralVariablePointer = SYSCTL_PERIPH_GPIOB ;
+            *ADCBaseVariablePointer = GPIO_PORTB_BASE ;
+            *ADCPinVariableAddress = GPIO_PIN_5 ;
+            break;
+        default:
+            break;
     }
-
-    return ADCDataArraySize;
-
 }
 
 /*
