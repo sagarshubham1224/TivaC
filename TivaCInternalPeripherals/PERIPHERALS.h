@@ -171,22 +171,6 @@ static const uint32_t ui32UARTPeripheralAddressArray[UART_PERIPHERAL_COUNT] = {
 };
 
 /*
- * Array to hold GPIO Base Address GPIO_PORTX_BASE, where X can be Port A, B, D, C, or E.
- */
-static const uint32_t ui32UARTGPIOBaseAddressArray[UART_PERIPHERAL_COUNT] = {
-                                                         GPIO_PORTA_BASE, GPIO_PORTB_BASE, GPIO_PORTD_BASE, GPIO_PORTC_BASE,
-                                                         GPIO_PORTC_BASE, GPIO_PORTE_BASE, GPIO_PORTD_BASE, GPIO_PORTE_BASE
-};
-
-/*
- * Array to hold GPIO Peripheral Address SYSCTL_PERIPH_GPIOX, where X can be Port A, B, D, C, or E.
- */
-static const uint32_t ui32UARTGPIOPeripheralAddressArray[UART_PERIPHERAL_COUNT] = {
-                                                               SYSCTL_PERIPH_GPIOA, SYSCTL_PERIPH_GPIOB, SYSCTL_PERIPH_GPIOD, SYSCTL_PERIPH_GPIOC,
-                                                               SYSCTL_PERIPH_GPIOC, SYSCTL_PERIPH_GPIOE, SYSCTL_PERIPH_GPIOD, SYSCTL_PERIPH_GPIOE
-};
-
-/*
  * Array to hold Alternative Pin Function Address according to UART pins.
  */
 static const uint32_t ui32UARTPinsAltAddressArray[UART_PERIPHERAL_COUNT][2] = {
