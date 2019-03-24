@@ -58,14 +58,14 @@ extern UARTDEVICE* initUART(UARTDEVICE* UARTDevicePointer, UART_PERIPHERAL UARTP
     uint8_t ui32UARTNumber = getUARTNumber(UARTPeripheralCode) ;
     UARTDevicePointer->ui32Base = ui32UARTBaseAddressArray[ui32UARTNumber];
 
-    SysCtlPeripheralEnable(ui32UARTGPIOPeripheralAddressArray[ui32UARTNumber]);
+    SysCtlPeripheralEnable(ui32GPIOPeripheralAddressArray[ui32UARTNumber]);
 
     SysCtlPeripheralEnable(ui32UARTPeripheralAddressArray[ui32UARTNumber]);
 
     GPIOPinConfigure(ui32UARTPinsAltAddressArray[ui32UARTNumber][0]);
     GPIOPinConfigure(ui32UARTPinsAltAddressArray[ui32UARTNumber][1]);
 
-    GPIOPinTypeUART(ui32UARTGPIOBaseAddressArray[ui32UARTNumber],
+    GPIOPinTypeUART(ui32GPIOBaseAddressArray[ui32UARTNumber],
                     ui32UARTPinsAddressArray[ui32UARTNumber]);
 
     UARTConfigSetExpClk(ui32UARTBaseAddressArray[ui32UARTNumber],
