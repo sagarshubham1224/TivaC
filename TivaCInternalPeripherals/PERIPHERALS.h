@@ -11,6 +11,7 @@
 #ifdef PART_TM4C123GH6PM
 #include "driverlib/sysctl.h"
 #include "driverlib/pin_map.h"
+#include "driverlib/adc.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
 /*
@@ -306,6 +307,6 @@ typedef enum ADC_PINS {
     AIN9_PE4  = ADC_CTL_CH9,
     AIN10_PB4 = ADC_CTL_CH10,
     AIN11_PB5 = ADC_CTL_CH11
-};
+}ADC_PINS;
 #endif
 #endif
