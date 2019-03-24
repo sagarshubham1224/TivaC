@@ -268,5 +268,38 @@ typedef enum WIDE_TIMER_PERIPHERAL {
     WIDE_TIMER5 = 5
 }WIDE_TIMER_PERIPHERAL;
 
+
+/*
+ * ADC PERIPHERAL ELEMENTS
+ */
+#define ADC_PERIPHERAL_COUNT        2
+static uint32_t ui32ADCPeripheralAddressArray[ADC_PERIPHERAL_COUNT] = {
+                                                                       SYSCTL_PERIPH_ADC0, SYSCTL_PERIPH_ADC1
+};
+
+static uint32_t ui32ADCBaseAddressArray[ADC_PERIPHERAL_COUNT] = {
+                                                                 ADC0_BASE, ADC1_BASE
+};
+
+typedef enum ADC_PERIPHERAL {
+    ADC0 = 0,
+    ADC1 = 1
+}ADC_PERIPHERAL;
+
+
+typedef enum ADC_PINS {
+    AIN0_PE3  = ADC_CTL_CH0,
+    AIN1_PE2  = ADC_CTL_CH1,
+    AIN2_PE1  = ADC_CTL_CH2,
+    AIN3_PE0  = ADC_CTL_CH3,
+    AIN4_PD3  = ADC_CTL_CH4,
+    AIN5_PD2  = ADC_CTL_CH5,
+    AIN6_PD1  = ADC_CTL_CH6,
+    AIN7_PD0  = ADC_CTL_CH7,
+    AIN8_PE5  = ADC_CTL_CH8,
+    AIN9_PE4  = ADC_CTL_CH9,
+    AIN10_PB4 = ADC_CTL_CH10,
+    AIN11_PB5 = ADC_CTL_CH11
+};
 #endif
 #endif
