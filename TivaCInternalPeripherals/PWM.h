@@ -18,39 +18,12 @@
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
-#include "driverlib/pwm.h"
+#include "driverlib/PWM.h"
 #include "driverlib/pin_map.h"
-
-/*
- * Macro Definitions:
- */
-#define PWM_PREDEFINED_CONFIG_MODE      PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC
-#define PWM_PREDEFINED_FREQUENCY        2000
-#define USE_FAST_PWM
-#define GET_ALT     0
-#define GET_GEN     1
-#define GET_PWM     2
-#define GET_PBT     3
-
-/*
- * PWMPin Struct Definition.
- */
-typedef struct PWMPin{
-    bool pwmOutputState;
-    uint32_t pwmModuleBase;
-    uint32_t pwmGenenrator;
-    uint32_t pwmFrequency ;
-    uint32_t pwmPeriod;
-    uint8_t  pwmPrescalar ;
-    uint32_t pwmOut;
-    uint32_t pwmOutBits;
-}PWMPin;
-
-
+#include "PERIPHERALS.h"
 
 
 /*
- * Pin Description
  * Module - Generator - PinName - Pin Assignment
  *
 ╔══════════╦══════════════╦═══════════╦═════════════════╗
@@ -79,7 +52,39 @@ typedef struct PWMPin{
 ╚══════════╩══════════════╩═══════════╩═════════════════╝
  *
  * Table created with: https://ozh.github.io/ascii-tables/
+ *
+ * We will bind PE4 and PE5 only to Module0 to reduce initialization complexities.
+ * Similarly, we will bind PD0 and PD1 only to Module1.
  */
+
+
+/*
+ * Macro Definitions:
+ */
+#define PWM_PREDEFINED_CONFIG_MODE      PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC
+#define PWM_PREDEFINED_FREQUENCY        2000
+
+typedef enum PWM_ENABLE_STATES {
+    PWM_ENABLE = true ,
+    PWM_DISABLE = false
+}PWM_ENABLE_STATES;
+/*
+ * PWMPin Struct Definition.
+ */
+typedef struct PWMPin{
+    PWM_ENABLE_STATES PWMState;
+    uint32_t PWMModuleBase;
+    uint32_t PWMGenenrator;
+    uint32_t PWMFrequency ;
+    uint32_t PWMPeriod;
+    uint8_t  PWMPrescalar ;
+    uint32_t PWMOut;
+    uint32_t PWMOutBits;
+}PWMPin;
+
+
+
+
 
 
 /*
@@ -87,25 +92,16 @@ typedef struct PWMPin{
  */
 
 
-/*
- * PWM Functions:
- */
-
-
-
-
 //public non-static external Functions:
 
 /*
- * Create and return a Struct Pointer of type PWMPin to control PWM Signal on a Pin.
+ * Create a Struct Pointer of type PWMPin to control PWM Signal on a Pin.
  * Arguments:
- *  PWMPin *pwmPinPointer                       :: Pointer to struct of PWMPin.
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- *  char GPIOPortLetter                         :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- *  uint8_t GPIOPinNumber                       :: GPIO pin number respective to Port, 0, 1, 2, 3, 4, 5, 6, or 7.
- *  uint8_t preScalarNumber                     :: preScalar value 1, 2, 4, 8, 16, 32, or 64. Any other value will be treated as 64.
- *  uint32_t configMode                         :: Desired Combination of PWM configuration of PWM Generator.
- *  uint32_t pwmFrequency                       :: Desired PWM Frequency. MUST BE LESS THAN (System Clock)/(preScalarNumber).
+ *  PWMPin *PWMPinPointer                       :: Pointer to struct of PWMPin.
+ *  GPIO_PIN_CODE GPIOPinCode                   :: GPIO_PIN_CODE enum value, GPIOXn, X is [A,F], n is [0,7] .
+ *  PWM_PRESCALAR preScalarNumber               :: preScalar enum value. All other values will be treated as prescalar of 64.
+ *  uint32_t PWMFrequency                       :: Desired PWM Frequency. MUST BE LESS THAN (System Clock)/(preScalarNumber).
+ *                                              :: If not, it would be set to that.
  * Steps:
  *  Step 1: Enable GPIO Module.
  *  Step 2: Enable PWM Module.
@@ -117,41 +113,96 @@ typedef struct PWMPin{
  *  Step 8: Enable the generator.
  *  Step 9: return the pointer to PWMpin struct.
  * Returns:
- *  PWMPin* pwmPinPointer                       :: Pointer to PWMPin struct.
+ *  none.
  */
-PWMPin* initPWM(    PWMPin *pwmPinPointer,          uint8_t PWMPeripheralNumber,
-                    char GPIOPortLetter,            uint8_t GPIOPinNumber,
-                    uint8_t preScalarNumber,        uint32_t configMode,
-                    uint32_t pwmFrequency );
+void initPWM(    PWMPin *PWMPinPointer,          GPIO_PIN_CODE GPIOPinCode,
+                    PWM_PRESCALAR preScalarNumber,  uint32_t PWMFrequency );
 
 
-void setPWMFrequency(PWMPin* PWMPinPointer, uint32_t pwmFrequency) ;
+void setPWMFrequency(PWMPin* PWMPinPointer, uint32_t PWMFrequency) ;
 
 
 /*
  * Write PWM Width from %age Value of Duty Cycle.
  * Arguments:
- *  PWMPin* pwmPinPointer                       :: Pointer to PWMPin struct.
- *  uint32_t dutyCycle                          :: duty Cycle value between 0 Period(Load) Value which is to be applied at PWM Pin.
+ *  PWMPin* PWMPinPointer                       :: Pointer to PWMPin struct.
+ *  uint32_t dutyCycle                          :: duty Cycle value between 0 and Period(Load) Value which is to be applied at PWM Pin.
  * Returns:
  *  nothing.
  */
-extern void analogPWMWrite(PWMPin* pwmPin, uint8_t dutyCycle100);
+extern void analogPWMWrite(PWMPin* PWMPin, uint8_t dutyCycle100);
 
 /*
  * Write PWM Width from %age Value of Duty Cycle.
  * Arguments:
- *  PWMPin* pwmPinPointer                       :: Pointer to PWMPin struct.
+ *  PWMPin* PWMPinPointer                       :: Pointer to PWMPin struct.
  *  uint8_t dutyCycle100                        :: duty Cycle value between 0 and 100 which is to be applied at the PWM Pin.
  * Returns:
  *  nothing.
  */
-void analogPWMWriteRaw(PWMPin* pwmPin, uint32_t dutyCycle);
+void analogPWMWriteRaw(PWMPin* PWMPin, uint32_t dutyCycle);
 
 
 
 //private static non-external Functions:
 
+
+
+
+
+/*
+ * Function to get PWM Module Sauce.
+ * Arguments:
+ *  GPIO_PIN_CODE GPIOPinCode                                   :: GPIO_PIN_CODE enum value, GPIOXn, X is [A,F], n is [0,7] .
+ *  uint32_t* PWMPinAlternateFunctionAddressVariablePointer     :: Pointer to variable to store PWMPin Alternate Function Address
+ *  uint32_t* PWMGeneratorAddressVariablePointer                :: Pointer to variable to store PWM Generator Address
+ *  uint32_t* PWMOutAddressVariablePointer                      :: Pointer to variable to store PWM Out Address
+ *  uint32_t* PWMOutBitAddressVariablePointer                   :: Pointer to variable to store PWM Out Bit Address
+ * Returns:
+ *  none.
+ */
+static void getPWMSauce(GPIO_PIN_CODE GPIOPinCode,
+                         uint32_t* PWMPinAlternateFunctionAddressVariablePointer,
+                         uint32_t* PWMGeneratorAddressVariablePointer,
+                         uint32_t* PWMOutAddressVariablePointer,
+                         uint32_t* PWMOutBitAddressVariablePointer) ;
+
+/*
+ * Function to get GPIO Peripheral and Base Address depending upon GPIO_PIN_CODE.
+ * Arguments:
+ *  uint8_t GPIOPortLetter                              :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
+ *  uint32_t* PWMGPIOPeripheralAddressVariablePointer   :: Pointer to variable to store GPIO Peripheral Address.
+ *  uint32__t* PWMGPIOBaseAddressVariablePointer        :: Pointer to variable to store GPIO Base Address.
+ * Returns:
+ *  none.
+ */
+static void getPWMGPIOPeripheralAndBaseAddress(GPIO_PIN_CODE GPIOPinCode,
+                                               uint32_t* PWMGPIOPeripheralAddressVariablePointer,
+                                               uint32_t* PWMGPIOBaseAddressVariablePointer) ;
+
+
+/*
+ * Function to get PWM Peripheral and Base Address depending GPIO_PIN_CODE.
+ * Arguments:
+ *  GPIO_PIN_CODE GPIOPinCode                       :: GPIO_PIN_CODE enum value, GPIOXn, X is [A,F], n is [0,7] .
+ *  uint32_t* PWMPeripheralAddressVariablePointer   :: Pointer to variable to store PWM Peripheral Address.
+ *  uint32_t* PWMBaseAddressVariablePointer         :: Pointer to variable to store PWM Base Address.
+ * Returns:
+ *  none.
+ */
+static void getPWMPeripheralAndBaseAddress(GPIO_PIN_CODE GPIOPinCode,
+                                               uint32_t* PWMPeripheralAddressVariablePointer,
+                                               uint32_t* PWMBaseAddressVariablePointer) ;
+
+
+/*
+ * Function to get Pin Address depending upon GPIO_PIN_CODE.
+ * Arguments:
+ *  uint8_t GPIOPinNumber                       :: GPIO Pin Number respective to Port, i.e. 0, 1, 2, 3, 4, 5, 6, or 7.
+ * Returns:
+ *  uint8_t GPIO Pin Address                    :: Depending upon passed argument, the appropriate value from array ui32GPIOPinAddressArray is returned.
+ */
+static uint8_t getPWMGPIOPinAddress(uint8_t GPIOPinNumber);
 
 /*
  * Function to get the preScalar #defined value from preScalar number.
@@ -160,71 +211,6 @@ void analogPWMWriteRaw(PWMPin* pwmPin, uint32_t dutyCycle);
  * Returns:
  *  uint32_t PWM Clock PreScalar                :: prescalar #defined values as SYSCTL_PWMDIV_X, where X can be 1, 2, 4, 8, 16, 32, or 64. *
  */
-static uint32_t getPreScalar(uint8_t preScalar);
-
-/*
- * Function to get all the required sauce for making a PWM Pin tick.
- * Arguments:
- *  char GPIOPortLetter                         :: GPIO Peripheral Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- *  uint8_t GPIOPinNumber                       :: GPIO Pin Number respective to Port, i.e. 0, 1, 2, 3, 4, 5, 6, or 7.
- *  uint8_t retValType                          :: value to decide which type of return value is required.
- * Returns:
- *  if retValType == GET_ALT                    :: returns pinAlternateFunctionAddress, GPIO_Pxy_MnPWMq, where x is Port Number, y is Pin Number, n is PWM Module Number and q is  PWM Pin.
- *  if retValType == GET_GEN                    :: returns pwmGenerator, PWM_GEN_X, where X is 0, 1, 2, or 3.
- *  if retValType == GEN_PWM                    :: returns pwmOut, PWM_OUT_X, where X is 0, 1, 2, 3, 4, 5, 6, or 7.
- *  if retValType == GEN_PBT                    :: returns pwmOutBit, PWM_OUT_X_BIT, where X is 0, 1, 2, 3, 4, 5, 6, or 7.
- */
-static uint32_t getPWMSauce(char GPIOPortLetter, uint8_t PWMPeripheralNumber, uint8_t GPIOPinNumber, uint8_t retValType);
-
-
-
-/*
- * Function to get GPIO Peripheral address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  char GPIOPortLetter                         :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address Of GPIO Peripheral         :: Depending upon passed argument, the appropriate value from array ui32GPIOPeripheralAddressArray is returned.
- */
-static uint32_t getGPIOPeripheralAddress(char GPIOPortLetter);
-
-/*
- * Function to get GPIO Base Address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  uint8_t GPIOPortLetter                      :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address of GPIO Base               :: Depending upon passed argument, the appropriate value from array ui32PGPIOBaseAddressArray is returned.
- */
-static uint32_t getGPIOBaseAddress(char GPIOPortLetter);
-
-/*
- * Function to get PWM Peripheral Address depending upon PWM Module Peripheral Number.
- * Arguments:
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- * Returns:
- *  uint32_t address of PWM Peripheral          :: Depending upon passed argument, the appropriate value from array ui32PWMModulePeripheralAddressArray is returned.
- */
-static uint32_t getPWMModulePeripheralAddress(uint8_t PWMPeripheralNumber);
-
-/*
- * Function to get PWM Base Address depending upon PWM Module Peripheral Number.
- * Arguments:
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- * Returns:
- *  uint32_t address of PWM Base                :: Depending upon passed argument, the appropriate value from array ui32PWMModuleBaseAddressArray is returned.
- */
-static uint32_t getPWMModuleBaseAddress(uint8_t PWMPeripheralNumber);
-
-
-
-
-/*
- * Function to get Pin Address depending upon GPIO Pin number respective to Port.
- * Arguments:
- *  uint8_t GPIOPinNumber                       :: GPIO Pin Number respective to Port, i.e. 0, 1, 2, 3, 4, 5, 6, or 7.
- * Returns:
- *  uint8_t GPIO Pin Address                    :: Depending upon passed argument, the appropriate value from array ui32GPIOPinAddressArray is returned.
- */
-static uint8_t getGPIOPinAddress(uint8_t GPIOPinNumber);
+static uint32_t getPreScalar(PWM_PRESCALAR preScalarNumber);
 
 #endif

@@ -3,7 +3,7 @@
 
 /*
  * There are two PWM modules; Module 0  and Module 1
- * Each of them have 4 Generators. Generators are numbered from  Generator 0 to Generator 7.
+ * Each of them have 4 Generators. Generators are numbered from  Generator 0 to Generator 4.
  * Each Generator has 2 signal outputs. These are named according to Modules0 and 1 and not Generator names.
  * Each Generator's output signal's frequency is controlled by 16 bit load value.
  * 2x4x2 = 16 maximum output PWM signals at one time.
@@ -42,53 +42,16 @@
 ╚══════════╩══════════════╩═══════════╩═════════════════╝
  *
  * Table created with: https://ozh.github.io/ascii-tables/
+ *
+ * We will bind PE4 and PE5 only to Module0 to reduce initialization complexities.
+ * Similarly, we will bind PD0 and PD1 only to Module1.
  */
 
 
 
-//******** PWM Sauce Arrays *********//
-//**********************************//
 
 
 
-/*
- * Array to hold GPIO Peripheral Address SYSCTL_PERIPH_GPIOX, where X can be Port A, B, C, D, E, or F.
- */
-const static uint32_t ui32GPIOPeripheralAddressArray[6] = {
-        SYSCTL_PERIPH_GPIOA, SYSCTL_PERIPH_GPIOB, SYSCTL_PERIPH_GPIOC,
-        SYSCTL_PERIPH_GPIOD, SYSCTL_PERIPH_GPIOE, SYSCTL_PERIPH_GPIOF
-};
-
-/*
- * Array to hold GPIO Base Address GPIO_PORTX_BASE, where X can be Port A, B, C, D, E, or F.
- */
-const static uint32_t ui32GPIOBaseAddressArray[6] = {
-        GPIO_PORTA_BASE, GPIO_PORTB_BASE, GPIO_PORTC_BASE,
-        GPIO_PORTD_BASE, GPIO_PORTE_BASE, GPIO_PORTF_BASE
-};
-
-/*
- * Array to hold GPIO Pin Address GPIO_PIN_X, where X can be 0, 1, 2, 3, 4, 5, 6, or 7.
- */
-const static uint8_t ui8GPIOPinAddressArray[8] = {
-        GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3,
-        GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7
-};
-
-
-/*
- * Array to hold PWM Module Peripheral Address SYSCTL_PERIPH_PWMX, where X can be 0, or 1.
- */
-const static uint32_t ui32PWMModulePeripheralAddressArray[2] = {
-        SYSCTL_PERIPH_PWM0,SYSCTL_PERIPH_PWM1
-};
-
-/*
- * Array to hold PWM Module Base Address PWMX_BASE, where X can be 0, or 1.
- */
-const static uint32_t ui32PWMModuleBaseAddressArray[2] = {
-        PWM0_BASE, PWM1_BASE
-};
 
 
 
@@ -101,15 +64,13 @@ const static uint32_t ui32PWMModuleBaseAddressArray[2] = {
 
 
 /*
- * Create and return a Struct Pointer of type PWMPin to control PWM Signal on a Pin.
+ * Create  Struct Pointer of type PWMPin to control PWM Signal on a Pin.
  * Arguments:
- *  PWMPin *pwmPinPointer                       :: Pointer to struct of PWMPin.
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- *  char GPIOPortLetter                         :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- *  uint8_t GPIOPinNumber                       :: GPIO pin number respective to Port, 0, 1, 2, 3, 4, 5, 6, or 7.
- *  uint8_t preScalarNumber                     :: preScalar value 1, 2, 4, 8, 16, 32, or 64. Any other value will be treated as 64.
- *  uint32_t configMode                         :: Desired Combination of PWM configuration of PWM Generator.
- *  uint32_t pwmFrequency                       :: Desired PWM Frequency. MUST BE LESS THAN (System Clock)/(preScalarNumber).
+ *  PWMPin *PWMPinPointer                       :: Pointer to struct of PWMPin.
+ *  GPIO_PIN_CODE GPIOPinCode                   :: GPIO_PIN_CODE enum value, GPIOXn, X is [A,F], n is [0,7] .
+ *  PWM_PRESCALAR preScalarNumber               :: preScalar enum value. All other values will be treated as prescalar of 64.
+ *  uint32_t PWMFrequency                       :: Desired PWM Frequency. MUST BE LESS THAN (System Clock)/(preScalarNumber).
+ *                                              :: If not, it would be set to that.
  * Steps:
  *  Step 1: Enable GPIO Module.
  *  Step 2: Enable PWM Module.
@@ -119,14 +80,11 @@ const static uint32_t ui32PWMModuleBaseAddressArray[2] = {
  *  Step 6: Set Period(Load) Value.
  *  Step 7: Set initial pulse width as 0. This is done by turning off the PWM pin.
  *  Step 8: Enable the generator.
- *  Step 9: return the pointer to PWMpin struct.
  * Returns:
- *  PWMPin* pwmPinPointer                       :: Pointer to PWMPin struct.
+ *  none.
  */
-PWMPin* initPWM(    PWMPin *pwmPinPointer,          uint8_t PWMPeripheralNumber,
-                    char GPIOPortLetter,            uint8_t GPIOPinNumber,
-                    uint8_t preScalarNumber,        uint32_t configMode,
-                    uint32_t pwmFrequency )
+void initPWM(    PWMPin *PWMPinPointer,          GPIO_PIN_CODE GPIOPinCode,
+                 PWM_PRESCALAR preScalarNumber,  uint32_t PWMFrequency )
 {
     /*
      *
@@ -144,26 +102,33 @@ PWMPin* initPWM(    PWMPin *pwmPinPointer,          uint8_t PWMPeripheralNumber,
      *      10. The Frequency at which the PWM Signal is to be generated. From it, the Load Value will be calculated. May need to change at run,so include in Struct.
      *      11. The Offset address of PWM Pin. PWM_OUT_X. Will need to set Pulse width at run time, so include in Struct.
      *      12. The  Bit ID for setting PWM Output On or Off. PWM_OUT_X_BIT.Needed at runtime to shutdown PWM signal, so include in Struct.
-     *  For getting values in Step 1., 2., 3., 5., 6., 7., and 8. appropriate functions are used to get correct values. Those have their own functional description.
-     *  For getting values in Step 4., 11., and 12. getPWMSauce() is used and it returns value according to need.
      */
-    pwmPinPointer->pwmModuleBase = getPWMModuleBaseAddress(PWMPeripheralNumber);
-    pwmPinPointer->pwmGenenrator = getPWMSauce(GPIOPortLetter,PWMPeripheralNumber,GPIOPinNumber,GET_GEN);
-    pwmPinPointer->pwmOut = getPWMSauce(GPIOPortLetter,PWMPeripheralNumber,GPIOPinNumber,GET_PWM);
-    pwmPinPointer->pwmOutBits = getPWMSauce(GPIOPortLetter,PWMPeripheralNumber,GPIOPinNumber,GET_PBT);
-    pwmPinPointer->pwmFrequency = pwmFrequency ;
-    pwmPinPointer->pwmPeriod = SysCtlClockGet()/preScalarNumber/pwmFrequency- 1;
-    pwmPinPointer->pwmOutputState = false;
-    pwmPinPointer->pwmPrescalar = getPreScalar(preScalarNumber) ;
+    uint32_t pinAlternateFunctionAddress = 0, PWMGeneratorAddress = 0, PWMOutAddress = 0, PWMOutBitAddress = 0;
+    uint32_t PWMPeripheralAddress = 0, PWMBaseAddress = 0 ;
+    uint32_t PWMGPIOPeripheralAddress = 0, PWMGPIOBaseAddress = 0 ;
+
+    getPWMSauce(GPIOPinCode, &pinAlternateFunctionAddress, & PWMGeneratorAddress, &PWMOutAddress, &PWMOutBitAddress);
+    getPWMPeripheralAndBaseAddress(GPIOPinCode, &PWMPeripheralAddress, &PWMBaseAddress);
+    getPWMGPIOPeripheralAndBaseAddress(GPIOPinCode, &PWMGPIOPeripheralAddress, &PWMGPIOBaseAddress) ;
+
+    PWMPinPointer->PWMModuleBase = PWMBaseAddress;
+    PWMPinPointer->PWMGenenrator = PWMGeneratorAddress ;
+    PWMPinPointer->PWMOut = PWMOutAddress ;
+    PWMPinPointer->PWMOutBits = PWMOutBitAddress ;
+    if(PWMFrequency > SysCtlClockGet()/preScalarNumber) PWMFrequency = SysCtlClockGet()/preScalarNumber ;
+    PWMPinPointer->PWMFrequency = PWMFrequency ;
+    PWMPinPointer->PWMPeriod = SysCtlClockGet()/preScalarNumber/PWMFrequency- 1;
+    PWMPinPointer->PWMState = PWM_DISABLE;
+    PWMPinPointer->PWMPrescalar = getPreScalar(preScalarNumber) ;
     /*
      * Step 1: Enable GPIO Module:-
      */
-    SysCtlPeripheralEnable(getGPIOPeripheralAddress(GPIOPortLetter));
+    SysCtlPeripheralEnable(PWMGPIOPeripheralAddress);
     SysCtlDelay(10);
     /*
      * Step 2: Enable PWM Module:-
      */
-    SysCtlPeripheralEnable(getPWMModulePeripheralAddress(PWMPeripheralNumber));     //In this example, as all signals are from the same Module,we only initialize that one.
+    SysCtlPeripheralEnable(PWMPeripheralAddress);     //In this example, as all signals are from the same Module,we only initialize that one.
     SysCtlDelay(10);
     /*
      * Step 3: Enable Clock on PWM Module.
@@ -173,27 +138,27 @@ PWMPin* initPWM(    PWMPin *pwmPinPointer,          uint8_t PWMPeripheralNumber,
     /*
      * Step 4: Configure alternate function, both on pin and on port base.
      */
-    GPIOPinTypePWM(getGPIOBaseAddress(GPIOPortLetter),getGPIOPinAddress(GPIOPinNumber));
-    GPIOPinConfigure(getPWMSauce(GPIOPortLetter,PWMPeripheralNumber,GPIOPinNumber,GET_ALT));
+    GPIOPinTypePWM(PWMGPIOBaseAddress,getPWMGPIOPinAddress(GPIOPinCode));
+    GPIOPinConfigure(pinAlternateFunctionAddress);
     /*
      * Step 5: Configure each of the the PWM Generator in use.
      */
-    PWMGenConfigure(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmGenenrator,configMode);
+    PWMGenConfigure(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMGenenrator,PWM_PREDEFINED_CONFIG_MODE);
     /*
      * Step 6: Set Period(Load) value of each generator.
      * For Desired Frequency F Hz, at System clock C Hz, and when using pre-scalar value P, Load value L is given by :-
      * L = (C/P)/F - 1
      */
-    PWMGenPeriodSet(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmGenenrator,pwmPinPointer->pwmPeriod);
+    PWMGenPeriodSet(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMGenenrator,PWMPinPointer->PWMPeriod);
     /*
      * Step 7: Set initial Pulse width as Zero
      */
-    pwmPinPointer->pwmOutputState = false;
-    PWMOutputState(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmOutBits,false);
+    PWMPinPointer->PWMState = PWM_DISABLE;
+    PWMOutputState(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMOutBits,false);
     /*
      * Step 8: Enable the timer on the generator.
      */
-    PWMGenEnable(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmGenenrator);
+    PWMGenEnable(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMGenenrator);
 
 
     //  UARTprintf("GPIO Peripheral: Sent: %X Actual: %X\n",getGPIOPeripheral(GPIOPortLetter),SYSCTL_PERIPH_GPIOF);
@@ -201,69 +166,65 @@ PWMPin* initPWM(    PWMPin *pwmPinPointer,          uint8_t PWMPeripheralNumber,
     //  UARTprintf("PreScalar: Sent: %X Actual %X\n",getPreScalar(preScalarNumber), SYSCTL_PWMDIV_64);
     //  UARTprintf("PinAddress: Sent: %X Actual: %X\n",getGPIOPinAddress(GPIOPinNumber),GPIO_PIN_1);
 
-    /*
-     * Step 9: Return the PWMPin pointer.
-     */
-    return pwmPinPointer;
 }
 
-void setPWMFrequency(PWMPin* PWMPinPointer, uint32_t pwmFrequency)
+void setPWMFrequency(PWMPin* PWMPinPointer, uint32_t PWMFrequency)
 {
-    PWMPinPointer->pwmPeriod = SysCtlClockGet()/PWMPinPointer->pwmPrescalar / pwmFrequency - 1 ;
-    PWMPinPointer->pwmFrequency = pwmFrequency ;
-    PWMGenPeriodSet(PWMPinPointer->pwmModuleBase, PWMPinPointer->pwmGenenrator, PWMPinPointer->pwmPeriod) ;
+    PWMPinPointer->PWMPeriod = SysCtlClockGet()/PWMPinPointer->PWMPrescalar / PWMFrequency - 1 ;
+    PWMPinPointer->PWMFrequency = PWMFrequency ;
+    PWMGenPeriodSet(PWMPinPointer->PWMModuleBase, PWMPinPointer->PWMGenenrator, PWMPinPointer->PWMPeriod) ;
     analogPWMWrite(PWMPinPointer, 30) ;
 }
 
 /*
  * Write PWM Width from %age Value of Duty Cycle.
  * Arguments:
- *  PWMPin* pwmPinPointer                       :: Pointer to PWMPin struct.
+ *  PWMPin* PWMPinPointer                       :: Pointer to PWMPin struct.
  *  uint8_t dutyCycle100                        :: duty Cycle value between 0 and 100 which is to be applied at the PWM Pin.
  * Returns:
  *  nothing.
  */
-void analogPWMWrite(PWMPin* pwmPinPointer, uint8_t dutyCycle100)
+void analogPWMWrite(PWMPin* PWMPinPointer, uint8_t dutyCycle100)
 {
     if(dutyCycle100)
     {
-        PWMPulseWidthSet(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmOut,dutyCycle100*pwmPinPointer->pwmPeriod/100);
-        if(!pwmPinPointer->pwmOutputState)
+        PWMPulseWidthSet(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMOut,dutyCycle100*PWMPinPointer->PWMPeriod/100);
+        if(PWMPinPointer->PWMState == PWM_DISABLE)
         {
-            PWMOutputState(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmOutBits,true);
-            pwmPinPointer->pwmOutputState = true;
+            PWMOutputState(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMOutBits,true);
+            PWMPinPointer->PWMState = PWM_ENABLE;
         }
     }
     else
     {
-        PWMOutputState(pwmPinPointer->pwmModuleBase,pwmPinPointer->pwmOutBits,false);
-        pwmPinPointer->pwmOutputState = false;
+        PWMOutputState(PWMPinPointer->PWMModuleBase,PWMPinPointer->PWMOutBits,false);
+        PWMPinPointer->PWMState = PWM_DISABLE;
     }
 }
 
 /*
  * Write PWM Width from %age Value of Duty Cycle.
  * Arguments:
- *  PWMPin* pwmPinPointer                       :: Pointer to PWMPin struct.
+ *  PWMPin* PWMPinPointer                       :: Pointer to PWMPin struct.
  *  uint32_t dutyCycle                          :: duty Cycle value between 0 Period(Load) Value which is to be applied at PWM Pin.
  * Returns:
  *  nothing.
  */
-void analogPWMWriteRaw(PWMPin* pwmPin, uint32_t dutyCycle)
+void analogPWMWriteRaw(PWMPin* PWMPin, uint32_t dutyCycle)
 {
     if(dutyCycle)
     {
-        PWMPulseWidthSet(pwmPin->pwmModuleBase,pwmPin->pwmOut,dutyCycle);
-        if(!pwmPin->pwmOutputState)
+        PWMPulseWidthSet(PWMPin->PWMModuleBase,PWMPin->PWMOut,dutyCycle);
+        if(PWMPin->PWMState == PWM_DISABLE)
         {
-            PWMOutputState(pwmPin->pwmModuleBase,pwmPin->pwmOutBits,true);
-            pwmPin->pwmOutputState = true;
+            PWMOutputState(PWMPin->PWMModuleBase,PWMPin->PWMOutBits,true);
+            PWMPin->PWMState = PWM_ENABLE;
         }
     }
     else
     {
-        PWMOutputState(pwmPin->pwmModuleBase,pwmPin->pwmOutBits,false);
-        pwmPin->pwmOutputState = false;
+        PWMOutputState(PWMPin->PWMModuleBase,PWMPin->PWMOutBits,false);
+        PWMPin->PWMState = PWM_DISABLE;
     }
 }
 
@@ -272,14 +233,279 @@ void analogPWMWriteRaw(PWMPin* pwmPin, uint32_t dutyCycle)
 //private static non-external Functions:
 
 
+
+
+/*
+ * Function to get PWM Module Sauce.
+ * Arguments:
+ *  GPIO_PIN_CODE GPIOPinCode                                   :: GPIO_PIN_CODE enum value, GPIOXn, X is [A,F], n is [0,7] .
+ *  uint32_t* PWMPinAlternateFunctionAddressVariablePointer     :: Pointer to variable to store PWMPin Alternate Function Address
+ *  uint32_t* PWMGeneratorAddressVariablePointer                :: Pointer to variable to store PWM Generator Address
+ *  uint32_t* PWMOutAddressVariablePointer                      :: Pointer to variable to store PWM Out Address
+ *  uint32_t* PWMOutBitAddressVariablePointer                   :: Pointer to variable to store PWM Out Bit Address
+ * Returns:
+ *  none.
+ */
+static void getPWMSauce(GPIO_PIN_CODE GPIOPinCode,
+                         uint32_t* PWMPinAlternateFunctionAddressVariablePointer,
+                         uint32_t* PWMGeneratorAddressVariablePointer,
+                         uint32_t* PWMOutAddressVariablePointer,
+                         uint32_t* PWMOutBitAddressVariablePointer)
+{
+    switch (GPIOPinCode) {
+    case GPIOB6:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PB6_M0PWM0 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_0 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_0 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_0_BIT ;
+        break;
+    case GPIOB7:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PB7_M0PWM1 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_0 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_1 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_1_BIT ;
+        break;
+    case GPIOB4:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PB4_M0PWM2 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_1 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_2 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_2_BIT ;
+        break;
+    case GPIOB5:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PB5_M0PWM3 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_1 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_3 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_3_BIT ;
+        break;
+    case GPIOE4:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PE4_M0PWM4 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_2 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_4 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_4_BIT ;
+        break;
+    case GPIOE5:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PE5_M0PWM5 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_2 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_5 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_5_BIT ;
+        break;
+    case GPIOC4:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PC4_M0PWM6 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_3 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_6 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_6_BIT ;
+        break;
+    case GPIOC5:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PC5_M0PWM7 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_3 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_7 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_7_BIT ;
+        break;
+    case GPIOD0:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PD0_M1PWM0 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_0 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_0 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_0_BIT ;
+        break;
+    case GPIOD1:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PD1_M1PWM1 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_0 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_1 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_1_BIT ;
+        break;
+    case GPIOA6:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PA6_M1PWM2 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_1 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_2 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_2_BIT ;
+        break;
+    case GPIOA7:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PA7_M1PWM3 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_1 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_3 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_3_BIT ;
+        break;
+    case GPIOF0:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PF0_M1PWM4 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_2 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_4 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_4_BIT ;
+        break;
+    case GPIOF1:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PF1_M1PWM5 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_2 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_5 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_5_BIT ;
+        break;
+    case GPIOF2:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PF2_M1PWM6 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_3 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_6 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_6_BIT ;
+        break;
+    case GPIOF3:
+        *PWMPinAlternateFunctionAddressVariablePointer = GPIO_PF3_M1PWM7 ;
+        *PWMGeneratorAddressVariablePointer = PWM_GEN_3 ;
+        *PWMOutAddressVariablePointer = PWM_OUT_7 ;
+        *PWMOutBitAddressVariablePointer = PWM_OUT_7_BIT ;
+        break;
+    default:
+        break;
+    }
+}
+
+
+/*
+ * Function to get GPIO Peripheral and Base Address depending upon GPIO_PIN_CODE.
+ * Arguments:
+ *  uint8_t GPIOPortLetter                              :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
+ *  uint32_t* PWMGPIOPeripheralAddressVariablePointer   :: Pointer to variable to store GPIO Peripheral Address.
+ *  uint32__t* PWMGPIOBaseAddressVariablePointer        :: Pointer to variable to store GPIO Base Address.
+ * Returns:
+ *  none.
+ */
+static void getPWMGPIOPeripheralAndBaseAddress(GPIO_PIN_CODE GPIOPinCode,
+                                               uint32_t* PWMGPIOPeripheralAddressVariablePointer,
+                                               uint32_t* PWMGPIOBaseAddressVariablePointer)
+{
+    switch (GPIOPinCode) {
+    case GPIOA6:
+    case GPIOA7:
+        *PWMGPIOPeripheralAddressVariablePointer = ui32GPIOPeripheralAddressArray[0] ;
+        *PWMGPIOBaseAddressVariablePointer = ui32GPIOBaseAddressArray[0] ;
+        break;
+    case GPIOB6:
+    case GPIOB7:
+    case GPIOB4:
+    case GPIOB5:
+        *PWMGPIOPeripheralAddressVariablePointer = ui32GPIOPeripheralAddressArray[1] ;
+        *PWMGPIOBaseAddressVariablePointer = ui32GPIOBaseAddressArray[1] ;
+        break;
+    case GPIOC4:
+    case GPIOC5:
+        *PWMGPIOPeripheralAddressVariablePointer = ui32GPIOPeripheralAddressArray[2] ;
+        *PWMGPIOBaseAddressVariablePointer = ui32GPIOBaseAddressArray[2] ;
+        break;
+    case GPIOD0:
+    case GPIOD1:
+        *PWMGPIOPeripheralAddressVariablePointer = ui32GPIOPeripheralAddressArray[3] ;
+        *PWMGPIOBaseAddressVariablePointer = ui32GPIOBaseAddressArray[3] ;
+        break;
+    case GPIOE4:
+    case GPIOE5:
+        *PWMGPIOPeripheralAddressVariablePointer = ui32GPIOPeripheralAddressArray[4] ;
+        *PWMGPIOBaseAddressVariablePointer = ui32GPIOBaseAddressArray[4] ;
+        break;
+    case GPIOF0:
+    case GPIOF1:
+    case GPIOF2:
+    case GPIOF3:
+        *PWMGPIOPeripheralAddressVariablePointer = ui32GPIOPeripheralAddressArray[5] ;
+        *PWMGPIOBaseAddressVariablePointer = ui32GPIOBaseAddressArray[5] ;
+        break;
+    default:
+        break;
+    }
+}
+
+
+/*
+ * Function to get PWM Peripheral and Base Address depending GPIO_PIN_CODE.
+ * Arguments:
+ *  GPIO_PIN_CODE GPIOPinCode                       :: GPIO_PIN_CODE enum value, GPIOXn, X is [A,F], n is [0,7] .
+ *  uint32_t* PWMPeripheralAddressVariablePointer   :: Pointer to variable to store PWM Peripheral Address.
+ *  uint32_t* PWMBaseAddressVariablePointer         :: Pointer to variable to store PWM Base Address.
+ * Returns:
+ *  none.
+ */
+static void getPWMPeripheralAndBaseAddress(GPIO_PIN_CODE GPIOPinCode,
+                                               uint32_t* PWMPeripheralAddressVariablePointer,
+                                               uint32_t* PWMBaseAddressVariablePointer)
+{
+    switch (GPIOPinCode) {
+    case GPIOB6:
+    case GPIOB7:
+    case GPIOB4:
+    case GPIOB5:
+    case GPIOE4:
+    case GPIOE5:
+    case GPIOC4:
+    case GPIOC5:
+        *PWMPeripheralAddressVariablePointer    = ui32PWMModulePeripheralAddressArray[0] ;
+        *PWMBaseAddressVariablePointer          = ui32PWMModuleBaseAddressArray[0] ;
+    case GPIOD0:
+    case GPIOD1:
+    case GPIOA6:
+    case GPIOA7:
+    case GPIOF0:
+    case GPIOF1:
+    case GPIOF2:
+    case GPIOF3:
+        *PWMPeripheralAddressVariablePointer    = ui32PWMModulePeripheralAddressArray[1] ;
+        *PWMBaseAddressVariablePointer          = ui32PWMModuleBaseAddressArray[1] ;
+    default:
+        break;
+    }
+}
+
+
+/*
+ * Function to get Pin Address depending upon GPIO_PIN_CODE.
+ * Arguments:
+ *  uint8_t GPIOPinNumber                       :: GPIO Pin Number respective to Port, i.e. 0, 1, 2, 3, 4, 5, 6, or 7.
+ * Returns:
+ *  uint8_t GPIO Pin Address                    :: Depending upon passed argument, the appropriate value from array ui32GPIOPinAddressArray is returned.
+ */
+static uint8_t getPWMGPIOPinAddress(GPIO_PIN_CODE GPIOPinCode)
+{
+    uint8_t GPIOPinAddress = 0 ;
+    switch (GPIOPinCode) {
+        case GPIOD0:
+        case GPIOF0:
+            GPIOPinAddress = ui8GPIOPinAddressArray[0] ;
+            break;
+        case GPIOD1:
+        case GPIOF1:
+            GPIOPinAddress = ui8GPIOPinAddressArray[1] ;
+            break;
+        case GPIOF2:
+            GPIOPinAddress = ui8GPIOPinAddressArray[2] ;
+            break;
+        case GPIOF3:
+            GPIOPinAddress = ui8GPIOPinAddressArray[3] ;
+            break;
+        case GPIOB4:
+        case GPIOE4:
+        case GPIOC4:
+            GPIOPinAddress = ui8GPIOPinAddressArray[4] ;
+            break;
+        case GPIOB5:
+        case GPIOE5:
+        case GPIOC5:
+            GPIOPinAddress = ui8GPIOPinAddressArray[5] ;
+            break;
+        case GPIOA6:
+        case GPIOB6:
+            GPIOPinAddress = ui8GPIOPinAddressArray[6] ;
+            break;
+        case GPIOA7:
+        case GPIOB7:
+            GPIOPinAddress = ui8GPIOPinAddressArray[7] ;
+            break;
+        default:
+            break;
+    }
+    return GPIOPinAddress ;
+}
+
 /*
  * Function to get the preScalar #defined value from preScalar number.
  * Arguments:
- *  uint8_t preScalarNumber                     :: preScalar value 1, 2, 4, 8, 16, 32, or 64. Any other value will be treated as 64.
+ *  PWM_PRESCALAR preScalarNumber               :: preScalar value 1, 2, 4, 8, 16, 32, or 64. Any other value will be treated as 64.
  * Returns:
  *  uint32_t PWM Clock PreScalar                :: prescalar #defined values as SYSCTL_PWMDIV_X, where X can be 1, 2, 4, 8, 16, 32, or 64. *
  */
-static uint32_t getPreScalar(uint8_t preScalarNumber)
+static uint32_t getPreScalar(PWM_PRESCALAR preScalarNumber)
 {
     switch (preScalarNumber)
     {
@@ -300,311 +526,4 @@ static uint32_t getPreScalar(uint8_t preScalarNumber)
     default:
         return 64;
     }
-}
-
-
-/*
- * Function to get all the required sauce for making a PWM Pin tick.
- * Arguments:
- *  char GPIOPortLetter                         :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- *  uint8_t GPIOPinNumber                       :: GPIO Pin Number respective to Port, i.e. 0, 1, 2, 3, 4, 5, 6, or 7.
- *  uint8_t retValType                          :: value to decide which type of return value is required.
- * Returns:
- *  if retValType == GET_ALT                    :: returns pinAlternateFunctionAddress, GPIO_Pxy_MnPWMq, where x is Port Number, y is Pin Number, n is PWM Module Number and q is  PWM Pin.
- *  if retValType == GET_GEN                    :: returns pwmGenerator, PWM_GEN_X, where X is 0, 1, 2, or 3.
- *  if retValType == GEN_PWM                    :: returns pwmOut, PWM_OUT_X, where X is 0, 1, 2, 3, 4, 5, 6, or 7.
- *  if retValType == GEN_PBT                    :: returns pwmOutBit, PWM_OUT_X_BIT, where X is 0, 1, 2, 3, 4, 5, 6, or 7.
- */
-static uint32_t getPWMSauce(char GPIOPortLetter, uint8_t PWMPeripheralNumber, uint8_t GPIOPinNumber, uint8_t retValType)
-{
-
-    uint32_t pinAlternateFunctionAddress = 0;
-    uint32_t pwmGenerator = 0;
-    uint32_t pwmOut = 0;
-    uint32_t pwmOutBit = 0;
-    uint32_t returnVal = 0;
-    if( PWMPeripheralNumber == 0 )              // Implies PWM Peripheral 0 is being used.
-    {
-        switch ( GPIOPortLetter ) {
-
-        case 'B':                               // For PORTB, PB6 (GEN 0), PB7 (GEN 0), PB4 (GEN 1), and PB5 (GEN 0), are PWM Pins for Generator 0 and 1 in PWM Module 0.
-            if( GPIOPinNumber == 6 )
-            {
-                pinAlternateFunctionAddress = GPIO_PB6_M0PWM0;
-                pwmGenerator = PWM_GEN_0;
-                pwmOut = PWM_OUT_0;
-                pwmOutBit = PWM_OUT_0_BIT;
-            }
-
-            else if( GPIOPinNumber == 7 )
-            {
-                pinAlternateFunctionAddress = GPIO_PB7_M0PWM1;
-                pwmGenerator = PWM_GEN_0;
-                pwmOut = PWM_OUT_1;
-                pwmOutBit = PWM_OUT_1_BIT;
-            }
-
-            else if( GPIOPinNumber == 4 )
-            {
-                pinAlternateFunctionAddress = GPIO_PB4_M0PWM2;
-                pwmGenerator = PWM_GEN_1;
-                pwmOut = PWM_OUT_2;
-                pwmOutBit = PWM_OUT_2_BIT;
-            }
-
-            else if( GPIOPinNumber == 5 )
-            {
-                pinAlternateFunctionAddress = GPIO_PB5_M0PWM3;
-                pwmGenerator = PWM_GEN_1;
-                pwmOut = PWM_OUT_3;
-                pwmOutBit = PWM_OUT_3_BIT;
-            }
-
-            break;
-
-        case 'E':                               // For PORTE, PE4, and PE5 are PWM Pins for Generator 2 in PWM Module 0.
-            if( GPIOPinNumber == 4 )
-            {
-                pinAlternateFunctionAddress = GPIO_PE4_M0PWM4;
-                pwmGenerator = PWM_GEN_2;
-                pwmOut = PWM_OUT_4;
-                pwmOutBit = PWM_OUT_4_BIT;
-            }
-
-            else if( GPIOPinNumber == 5 )
-            {
-                pinAlternateFunctionAddress = GPIO_PE5_M0PWM5;
-                pwmGenerator = PWM_GEN_2;
-                pwmOut = PWM_OUT_5;
-                pwmOutBit = PWM_OUT_5_BIT;
-            }
-
-            break;
-
-        case 'C':                               // For PORTC, PC4, and PC5 are PWM Pins for Generator 3 in PWM Module 0.
-
-            if( GPIOPinNumber == 4 )
-            {
-                pinAlternateFunctionAddress = GPIO_PC4_M0PWM6;
-                pwmGenerator = PWM_GEN_3;
-                pwmOut = PWM_OUT_6;
-                pwmOutBit = PWM_OUT_6_BIT;
-            }
-
-            else if( GPIOPinNumber == 5 )
-            {
-                pinAlternateFunctionAddress = GPIO_PC5_M0PWM7;
-                pwmGenerator = PWM_GEN_3;
-                pwmOut = PWM_OUT_7;
-                pwmOutBit = PWM_OUT_7_BIT;
-            }
-
-            break;
-
-        case 'D':                               // For PORTD, PD0, and PD1 are PWM Pins for Generator 3 in PWM Module 0.
-
-            if( GPIOPinNumber == 0 )
-            {
-                pinAlternateFunctionAddress = GPIO_PD0_M0PWM6;
-                pwmGenerator = PWM_GEN_3;
-                pwmOut = PWM_OUT_6;
-                pwmOutBit = PWM_OUT_6_BIT;
-            }
-
-            else if( GPIOPinNumber == 1 )
-            {
-                pinAlternateFunctionAddress = GPIO_PD1_M0PWM7;
-                pwmGenerator = PWM_GEN_3;
-                pwmOut = PWM_OUT_7;
-                pwmOutBit = PWM_OUT_7_BIT;
-            }
-
-            break;
-        default:
-            break;
-        }
-
-    }
-    else if( PWMPeripheralNumber == 1 )         // Implies PWM Peripheral 1 is being used.
-    {
-        switch (GPIOPortLetter) {
-        case 'D':                               // For PORTD, PD0, and PD1 are PWM Pins for Generator 0 in PWM Module 1.
-
-            if( GPIOPinNumber == 0)
-            {
-                pinAlternateFunctionAddress = GPIO_PD0_M1PWM0;
-                pwmGenerator = PWM_GEN_0;
-                pwmOut = PWM_OUT_0;
-                pwmOutBit = PWM_OUT_0_BIT;
-            }
-
-            else if( GPIOPinNumber == 1 )
-            {
-                pinAlternateFunctionAddress = GPIO_PD1_M1PWM1;
-                pwmGenerator = PWM_GEN_0;
-                pwmOut = PWM_OUT_1;
-                pwmOutBit = PWM_OUT_1_BIT;
-            }
-
-            break;
-        case 'A':                               // For PORTA, PA6, and PA7 are PWM Pins for Generator 1 in PWM Module 1.
-
-            if( GPIOPinNumber == 6)
-            {
-                pinAlternateFunctionAddress = GPIO_PA6_M1PWM2;
-                pwmGenerator = PWM_GEN_1;
-                pwmOut = PWM_OUT_2;
-                pwmOutBit = PWM_OUT_2_BIT;
-            }
-
-            else if( GPIOPinNumber == 7 )
-            {
-                pinAlternateFunctionAddress = GPIO_PA7_M1PWM3;
-                pwmGenerator = PWM_GEN_1;
-                pwmOut = PWM_OUT_3;
-                pwmOutBit = PWM_OUT_3_BIT;
-            }
-
-            break;
-
-        case 'E':                               // For PORTE, PE4, and PE5 are PWM Pins for Generator 1 in PWM Module 1.
-
-            if( GPIOPinNumber == 4 )
-            {
-                pinAlternateFunctionAddress = GPIO_PE4_M1PWM2;
-                pwmGenerator = PWM_GEN_1;
-                pwmOut = PWM_OUT_2;
-                pwmOutBit = PWM_OUT_2_BIT;
-            }
-
-            else if( GPIOPinNumber == 5 )
-            {
-                pinAlternateFunctionAddress = GPIO_PE5_M1PWM3;
-                pwmGenerator = PWM_GEN_1;
-                pwmOut = PWM_OUT_3;
-                pwmOutBit = PWM_OUT_3_BIT;
-            }
-
-            break;
-
-        case 'F':                               // For PORTF, PF0 (GEN 2), PF1 (GEN 2), PF2 (GEN 3), and PF3 (GEN 2), are PWM Pins for Generator 2 and Generator 3 in PWM Module 1.
-
-            if( GPIOPinNumber == 0 )
-            {
-                pinAlternateFunctionAddress = GPIO_PF0_M1PWM4;
-                pwmGenerator = PWM_GEN_2;
-                pwmOut = PWM_OUT_4;
-                pwmOutBit = PWM_OUT_4_BIT;
-            }
-
-            else if( GPIOPinNumber == 1 )
-            {
-                pinAlternateFunctionAddress = GPIO_PF1_M1PWM5;
-                pwmGenerator = PWM_GEN_2;
-                pwmOut = PWM_OUT_5;
-                pwmOutBit = PWM_OUT_5_BIT;
-            }
-
-            else if( GPIOPinNumber == 2 )
-            {
-                pinAlternateFunctionAddress = GPIO_PF2_M1PWM6;
-                pwmGenerator = PWM_GEN_3;
-                pwmOut = PWM_OUT_6;
-                pwmOutBit = PWM_OUT_6_BIT;
-            }
-
-            else if( GPIOPinNumber == 3 )
-            {
-                pinAlternateFunctionAddress = GPIO_PF3_M1PWM7;
-                pwmGenerator = PWM_GEN_3;
-                pwmOut = PWM_OUT_7;
-                pwmOutBit = PWM_OUT_7_BIT;
-            }
-
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    if( retValType == GET_ALT )     returnVal = pinAlternateFunctionAddress;
-    else if( retValType == GET_GEN ) returnVal = pwmGenerator;
-    else if( retValType == GET_PWM ) returnVal = pwmOut;
-    else if( retValType == GET_PBT ) returnVal = pwmOutBit;
-
-    return returnVal;
-}
-
-
-
-
-
-
-
-
-
-/*
- * Function to get GPIO Peripheral address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  char GPIOPortLetter                         :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address Of GPIO Peripheral         :: Depending upon passed argument, the appropriate value from array ui32GPIOPeripheralAddressArray is returned.
- */
-static uint32_t getGPIOPeripheralAddress(char GPIOPortLetter)
-{
-    return ui32GPIOPeripheralAddressArray[(uint8_t)(GPIOPortLetter - 'A')];
-}
-
-
-/*
- * Function to get GPIO Base Address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  uint8_t GPIOPortLetter                      :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address of GPIO Base               :: Depending upon passed argument, the appropriate value from array ui32PGPIOBaseAddressArray is returned.
- */
-static uint32_t getGPIOBaseAddress(char GPIOPortLetter)
-{
-    return ui32GPIOBaseAddressArray[(uint8_t)(GPIOPortLetter - 'A')];
-}
-
-/*
- * Function to get PWM Peripheral Address depending upon PWM Module Peripheral Number.
- * Arguments:
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- * Returns:
- *  uint32_t address of PWM Peripheral          :: Depending upon passed argument, the appropriate value from array ui32PWMModulePeripheralAddressArray is returned.
- */
-static uint32_t getPWMModulePeripheralAddress(uint8_t PWMPeripheralNumber)
-{
-    return ui32PWMModulePeripheralAddressArray[PWMPeripheralNumber];
-}
-
-/*
- * Function to get PWM Base Address depending upon PWM Module Peripheral Number.
- * Arguments:
- *  uint8_t PWMPeripheralNumber                 :: PWM Peripheral Number 0, or 1.
- * Returns:
- *  uint32_t address of PWM Base                :: Depending upon passed argument, the appropriate value from array ui32PWMModuleBaseAddressArray is returned.
- */
-static uint32_t getPWMModuleBaseAddress(uint8_t PWMPeripheralNumber)
-{
-    return ui32PWMModuleBaseAddressArray[PWMPeripheralNumber];
-}
-
-
-
-
-/*
- * Function to get Pin Address depending upon GPIO Pin number respective to Port.
- * Arguments:
- *  uint8_t GPIOPinNumber                       :: GPIO Pin Number respective to Port, i.e. 0, 1, 2, 3, 4, 5, 6, or 7.
- * Returns:
- *  uint8_t GPIO Pin Address                    :: Depending upon passed argument, the appropriate value from array ui32GPIOPinAddressArray is returned.
- */
-static uint8_t getGPIOPinAddress(uint8_t GPIOPinNumber)
-{
-    return ui8GPIOPinAddressArray[GPIOPinNumber];
 }
