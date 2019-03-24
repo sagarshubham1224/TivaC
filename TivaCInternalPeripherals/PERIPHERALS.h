@@ -313,5 +313,43 @@ typedef enum ADC_TRIGGER_TYPE {
     ADC_TRIG_PROC = ADC_TRIGGER_PROCESSOR,
     ADC_TRIG_TIMER = ADC_TRIGGER_TIMER
 }ADC_TRIGGER_TYPE;
+
+
+/*
+ * PWM PERIPHERAL ELEMENTS
+ */
+
+/*
+ * Array to hold PWM Module Peripheral Address SYSCTL_PERIPH_PWMX, where X can be 0, or 1.
+ */
+const static uint32_t ui32PWMModulePeripheralAddressArray[2] = {
+        SYSCTL_PERIPH_PWM0,SYSCTL_PERIPH_PWM1
+};
+
+/*
+ * Array to hold PWM Module Base Address PWMX_BASE, where X can be 0, or 1.
+ */
+const static uint32_t ui32PWMModuleBaseAddressArray[2] = {
+        PWM0_BASE, PWM1_BASE
+};
+
+/*
+ * Array to hold GPIO Pin Address GPIO_PIN_X, where X can be 0, 1, 2, 3, 4, 5, 6, or 7.
+ */
+const static uint8_t ui8GPIOPinAddressArray[8] = {
+        GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3,
+        GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7
+};
+
+typedef enum PWM_PRESCALAR {
+    PWM_PRESCALAR_1 = 1,
+    PWM_PRESCALAR_2 = 2,
+    PWM_PRESCALAR_4 = 4,
+    PWM_PRESCALAR_8 = 8,
+    PWM_PRESCALAR_16 = 16,
+    PWM_PRESCALAR_32 = 32,
+    PWM_PRESCALAR_64 = 64,
+}PWM_PRESCALAR;
+
 #endif
 #endif
