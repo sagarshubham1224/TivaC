@@ -286,6 +286,12 @@ typedef enum ADC_PERIPHERAL {
     ADC1 = 1
 }ADC_PERIPHERAL;
 
+typedef enum ADC_SEQUENCER {
+    ADC_SEQ0 = 0,
+    ADC_SEQ1 = 1,
+    ADC_SEQ2 = 2,
+    ADC_SEQ3 = 3
+}ADC_SEQUENCER;
 
 typedef enum ADC_PINS {
     AIN0_PE3  = ADC_CTL_CH0,
