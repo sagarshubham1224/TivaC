@@ -4,26 +4,9 @@
  * File to hold I2C related functions.
  */
 
-#ifndef I2C_H_
-#define I2C_H_
-#include <stdint.h>
-#include <stdbool.h>
-#include "inc/hw_memmap.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/pin_map.h"
-#include "driverlib/gpio.h"
-#include "driverlib/i2c.h"
-//#include "ss_PeripheralNames.h"
-
 
 /*
- * Macro Definitions.
- */
-
-#define I2C_MASTER_TIMEOUT_HEX_VAL      0xFF
-
-/*
- * I2C Pin Description
+ * Pin Description
 ╔══════════════╦═════════╦═══════════╦══════════╗
 ║  I2C-MODULE  ║  PORT   ║  SCL_PIN  ║  SDA_PIN ║
 ╠══════════════╬═════════╬═══════════╬══════════╣
@@ -33,12 +16,27 @@
 ║  I2C3        ║  GPIOD  ║  PD0      ║  PD1     ║
 ╚══════════════╩═════════╩═══════════╩══════════╝
  */
-typedef enum I2C_PERIPHERAL {
-    I2C0 = 0 ,
-    I2C1 = 1 ,
-    I2C2 = 2 ,
-    I2C3 = 3
-}I2C_PERIPHERAL;
+
+
+#ifndef I2C_H_
+#define I2C_H_
+#include <stdint.h>
+#include <stdbool.h>
+#include "inc/hw_memmap.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/gpio.h"
+#include "driverlib/i2c.h"
+#include "PERIPHERALS.h"
+
+
+/*
+ * Macro Definitions.
+ */
+
+#define I2C_MASTER_TIMEOUT_HEX_VAL      0xFF
+
+
 
 
 typedef enum I2C_COMMUNICATION_SPEED {
@@ -56,16 +54,19 @@ typedef struct I2CDEVICE{
 //public non-static extern Functions.
 
 /*
- * Create and return I2CDEVICE pointer.
+ * Create I2CDEVICE pointer.
  * Arguments:
  *  I2CDEVICE* I2CDevicePointer                     :: Pointer to I2CDEVICE struct.
  *  I2C_PERIPHERAL I2CPeripheralCode                :: base number code of the I2C peripheral as I2CX, where X can be in [0,3]
  *  int8_t deviceAddress                            :: Address of I2C Device. Must be between 0-127.
  *  I2C_COMMUNICATION_SPEED I2CCommunicationSpeed   :: Speed at which I2C speed communication is to take place, 100kHz or 400kHz.
  * Returns:
- * I2CDEVICE* I2CDevicePointer              :: Pointer to I2CDEVICE struct.
+ *  none.
  */
-I2CDEVICE* initI2CMaster(I2CDEVICE* I2CDevicePointer,I2C_PERIPHERAL I2CPeripheralCode,int8_t deviceAddress, I2C_COMMUNICATION_SPEED I2CCommunicationSpeed) ;
+void initI2CMaster(I2CDEVICE* I2CDevicePointer,
+                         I2C_PERIPHERAL I2CPeripheralCode,
+                         int8_t deviceAddress,
+                         I2C_COMMUNICATION_SPEED I2CCommunicationSpeed) ;
 
 /*
  * Returns of WHO_AM_I register of the device.
@@ -123,6 +124,29 @@ extern int8_t I2CWriteByte(I2CDEVICE* I2CDevicePointer,uint8_t registerAddress,u
 
 
 
-static uint8_t getI2CBaseNumber(I2C_PERIPHERAL I2CPeripheralCode) ;
+/*
+ * Function to get I2C Peripheral Details.
+ * Arguments:
+ *  I2C_PERIPHERAL I2CPeripheralCode                    :: I2_PERIPHERAL enum code.
+ *  uint32_t* I2CPeripheralAddressVariablePointer       :: Pointer to variable to store I2C Peripheral Address.
+ *  uint32_t* I2CBaseAddressVariablePointer             :: Pointer to variable to store I2C Base Address.
+ *  uint32_t* I2CGPIOPeripheralAddressVariablePointer   :: Pointer to variable to store I2C GPIO Peripheral Address.
+ *  uint32_t* I2CGPIOBaseAddressVariablePointer         :: Pointer to variable to store I2C GPIO Base Address.
+ *  uint32_t* I2CSCLPinAltAddressVariablePointer        :: Pointer to variable to store I2C SCL Pin Alternate Function Address.
+ *  uint32_t* I2CSDAPinAltAddressVariablePointer        :: Pointer to variable to store I2C SDA Pin Alternate Function Address.
+ *  uint8_t* I2CSCLPinAddressVariablePointer            :: Pointer to variable to store I2C SCL Pin GPIO Address.
+ *  uint8_t* I2CSDAPinAddressVariablePointer            :: Pointer to variable to store I2C SDA Pin GPIO Address.
+ * Returns:
+ *  none.
+ */
+static void getI2CPeripheralDetails(I2C_PERIPHERAL I2CPeripheralCode,
+                                    uint32_t* I2CPeripheralAddressVariablePointer,
+                                    uint32_t* I2CBaseAddressVariablePointer,
+                                    uint32_t* I2CGPIOPeripheralAddressVariablePointer,
+                                    uint32_t* I2CGPIOBaseAddressVariablePointer,
+                                    uint32_t* I2CSCLPinAltAddressVariablePointer,
+                                    uint32_t* I2CSDAPinAltAddressVariablePointer,
+                                    uint8_t* I2CSCLPinAddressVariablePointer,
+                                    uint8_t* I2CSDAPinAddressVariablePointer) ;
 
 #endif

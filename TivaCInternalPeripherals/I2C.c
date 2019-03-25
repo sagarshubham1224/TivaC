@@ -13,51 +13,8 @@
  */
 
 
-static const uint32_t ui32I2CPeripheralAddressArray[4] = {
-        SYSCTL_PERIPH_I2C0,
-        SYSCTL_PERIPH_I2C1,
-        SYSCTL_PERIPH_I2C2,
-        SYSCTL_PERIPH_I2C3
-};
 
 
-static const uint32_t ui32I2CBaseAddressArray[4] = {
-        I2C0_BASE,
-        I2C1_BASE,
-        I2C2_BASE,
-        I2C3_BASE
-};
-
-
-static const uint32_t ui32I2CGPIOPeripheralAddressArray[4] = {
-        SYSCTL_PERIPH_GPIOB,
-        SYSCTL_PERIPH_GPIOA,
-        SYSCTL_PERIPH_GPIOE,
-        SYSCTL_PERIPH_GPIOD
-};
-
-
-static const uint32_t ui32I2CGPIOBaseAddressArray[4] = {
-        GPIO_PORTB_BASE,
-        GPIO_PORTA_BASE,
-        GPIO_PORTE_BASE,
-        GPIO_PORTD_BASE
-};
-
-static const uint32_t ui32I2CPinsAltAddressArray[4][2] = {
-        {GPIO_PB2_I2C0SCL, GPIO_PB3_I2C0SDA},
-        {GPIO_PA6_I2C1SCL, GPIO_PA7_I2C1SDA},
-        {GPIO_PE4_I2C2SCL, GPIO_PE5_I2C2SDA},
-        {GPIO_PD0_I2C3SCL, GPIO_PD1_I2C3SDA}
-};
-
-
-static const uint8_t ui8I2CClockDataPins[4][2] = {
-        {GPIO_PIN_2, GPIO_PIN_3},
-        {GPIO_PIN_6, GPIO_PIN_7},
-        {GPIO_PIN_4, GPIO_PIN_5},
-        {GPIO_PIN_0, GPIO_PIN_1}
-};
 
 
 /*
@@ -70,41 +27,57 @@ static const uint8_t ui8I2CClockDataPins[4][2] = {
  * Returns:
  * I2CDEVICE* I2CDevicePointer              :: Pointer to I2CDEVICE struct.
  */
-I2CDEVICE* initI2CMaster(I2CDEVICE* I2CDevicePointer,I2C_PERIPHERAL I2CPeripheralCode,int8_t deviceAddress, I2C_COMMUNICATION_SPEED I2CCommunicationSpeed)
+void initI2CMaster(I2CDEVICE* I2CDevicePointer,I2C_PERIPHERAL I2CPeripheralCode,int8_t deviceAddress, I2C_COMMUNICATION_SPEED I2CCommunicationSpeed)
 {
-    uint8_t I2CBaseNumber = getI2CBaseNumber(I2CPeripheralCode) ;
-    SysCtlPeripheralDisable(ui32I2CPeripheralAddressArray[I2CBaseNumber]);
-    SysCtlPeripheralReset(ui32I2CPeripheralAddressArray[I2CBaseNumber]);
-    SysCtlPeripheralEnable(ui32I2CPeripheralAddressArray[I2CBaseNumber]);
-
-    if( ! (SysCtlPeripheralReady(ui32I2CGPIOPeripheralAddressArray[I2CBaseNumber]) ) ){
-        SysCtlPeripheralEnable(ui32I2CGPIOPeripheralAddressArray[I2CBaseNumber]);
+    uint32_t I2CPeripheralAddressVariable;
+    uint32_t I2CBaseAddressVariable;
+    uint32_t I2CGPIOPeripheralAddressVariable;
+    uint32_t I2CGPIOBaseAddressVariable;
+    uint32_t I2CSCLPinAltAddressVariable;
+    uint32_t I2CSDAPinAltAddressVariable;
+    uint8_t I2CSCLPinAddressVariable;
+    uint8_t I2CSDAPinAddressVariable;
+    getI2CPeripheralDetails(I2CPeripheralCode,
+                            &I2CPeripheralAddressVariable,
+                            &I2CBaseAddressVariable,
+                            &I2CGPIOPeripheralAddressVariable,
+                            &I2CGPIOBaseAddressVariable,
+                            &I2CSCLPinAltAddressVariable,
+                            &I2CSDAPinAltAddressVariable,
+                            &I2CSCLPinAddressVariable,
+                            &I2CSDAPinAddressVariable) ;
+    if(!SysCtlPeripheralReady(I2CPeripheralAddressVariable))
+    {
+        SysCtlPeripheralEnable(I2CPeripheralAddressVariable) ;
+        while(!SysCtlPeripheralReady(I2CPeripheralAddressVariable)) ;
     }
-    while(  ! (SysCtlPeripheralReady(ui32I2CGPIOPeripheralAddressArray[I2CBaseNumber]) ) ||
-            ! (SysCtlPeripheralReady(ui32I2CPeripheralAddressArray[I2CBaseNumber]) ) );
+    if ( !SysCtlPeripheralReady(I2CGPIOPeripheralAddressVariable) )
+    {
+        SysCtlPeripheralEnable(I2CGPIOPeripheralAddressVariable);
+        while(! SysCtlPeripheralReady(I2CGPIOPeripheralAddressVariable)) ;
+    }
 
-    GPIOPinConfigure(ui32I2CPinsAltAddressArray[I2CBaseNumber][0]);
-    GPIOPinConfigure(ui32I2CPinsAltAddressArray[I2CBaseNumber][1]);
+    GPIOPinConfigure(I2CSCLPinAltAddressVariable);
+    GPIOPinConfigure(I2CSDAPinAltAddressVariable);
 
 
-    GPIOPinTypeI2CSCL(ui32I2CGPIOBaseAddressArray[I2CBaseNumber],
-                        ui8I2CClockDataPins[I2CBaseNumber][0]);
-    GPIOPinTypeI2C(ui32I2CGPIOBaseAddressArray[I2CBaseNumber],
-                        ui8I2CClockDataPins[I2CBaseNumber][1]);
+    GPIOPinTypeI2CSCL(I2CGPIOBaseAddressVariable,
+                      I2CSCLPinAddressVariable);
+    GPIOPinTypeI2C(I2CGPIOBaseAddressVariable,
+                   I2CSDAPinAddressVariable);
 
-    I2CMasterInitExpClk(ui32I2CBaseAddressArray[I2CBaseNumber],
+    I2CMasterInitExpClk(I2CBaseAddressVariable,
                         SysCtlClockGet(),FAST_400k_I2C);
 
-    I2CMasterTimeoutSet(ui32I2CBaseAddressArray[I2CBaseNumber],I2C_MASTER_TIMEOUT_HEX_VAL);
+    I2CMasterTimeoutSet(I2CBaseAddressVariable,I2C_MASTER_TIMEOUT_HEX_VAL);
 
-    I2CMasterEnable(ui32I2CBaseAddressArray[I2CBaseNumber]);
+    I2CMasterEnable(I2CBaseAddressVariable);
 
-    while( I2CMasterBusy( ui32I2CBaseAddressArray[I2CBaseNumber] ) );
+    while( I2CMasterBusy( I2CBaseAddressVariable ) );
 
-    I2CDevicePointer->I2CBase = ui32I2CBaseAddressArray[I2CBaseNumber];
+    I2CDevicePointer->I2CBase = I2CBaseAddressVariable;
     I2CDevicePointer->deviceAddress = deviceAddress;
 
-    return I2CDevicePointer;
 }
 
 
@@ -169,8 +142,8 @@ extern uint8_t I2CReadByte(I2CDEVICE* I2CDevicePointer,uint8_t registerAddress)
  * uint32_t* dataArray                      :: array in which read values are stored. *
  */
 extern uint8_t* I2CReadBytes(I2CDEVICE* I2CDevicePointer,
-                        uint8_t startRegisterAddress,
-                        uint8_t numOfRegisters, uint8_t* dataArray)
+                             uint8_t startRegisterAddress,
+                             uint8_t numOfRegisters, uint8_t* dataArray)
 {
     uint8_t loopVal = 0;
     I2CMasterSlaveAddrSet(I2CDevicePointer->I2CBase,I2CDevicePointer->deviceAddress,false);
@@ -230,17 +203,60 @@ extern int8_t I2CWriteByte(I2CDEVICE* I2CDevicePointer,uint8_t registerAddress,u
 
 
 
-static uint8_t getI2CBaseNumber(I2C_PERIPHERAL I2CPeripheralCode)
+
+
+static void getI2CPeripheralDetails(I2C_PERIPHERAL I2CPeripheralCode,
+                                    uint32_t* I2CPeripheralAddressVariablePointer,
+                                    uint32_t* I2CBaseAddressVariablePointer,
+                                    uint32_t* I2CGPIOPeripheralAddressVariablePointer,
+                                    uint32_t* I2CGPIOBaseAddressVariablePointer,
+                                    uint32_t* I2CSCLPinAltAddressVariablePointer,
+                                    uint32_t* I2CSDAPinAltAddressVariablePointer,
+                                    uint8_t* I2CSCLPinAddressVariablePointer,
+                                    uint8_t* I2CSDAPinAddressVariablePointer)
 {
     switch (I2CPeripheralCode) {
-        case I2C0:
-            return 0;
-        case I2C1:
-            return 1;
-        case I2C2:
-            return 2;
-        case I2C3:
-            return 3;
+    case I2C0: // SCL: PB2 SDA: PB3
+    *I2CPeripheralAddressVariablePointer        = ui32I2CPeripheralAddressArray[0] ;
+    *I2CBaseAddressVariablePointer              = ui32I2CBaseAddressArray[0] ;
+    *I2CGPIOPeripheralAddressVariablePointer    = ui32GPIOPeripheralAddressArray[1] ; // I2C0 is at Port B.
+    *I2CGPIOBaseAddressVariablePointer          = ui32GPIOBaseAddressArray[1] ;
+    *I2CSCLPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[0][0] ;
+    *I2CSDAPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[0][1] ;
+    *I2CSCLPinAddressVariablePointer            = ui8GPIOPinAddressArray[2] ;
+    *I2CSDAPinAddressVariablePointer            = ui8GPIOPinAddressArray[3] ;
+    break;
+    case I2C1: // SCL: PA6 SDA: PA7
+        *I2CPeripheralAddressVariablePointer        = ui32I2CPeripheralAddressArray[1] ;
+        *I2CBaseAddressVariablePointer              = ui32I2CBaseAddressArray[1] ;
+        *I2CGPIOPeripheralAddressVariablePointer    = ui32GPIOPeripheralAddressArray[0] ; // I2C1 is at Port A.
+        *I2CGPIOBaseAddressVariablePointer          = ui32GPIOBaseAddressArray[0] ;
+        *I2CSCLPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[1][0] ;
+        *I2CSDAPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[1][1] ;
+        *I2CSCLPinAddressVariablePointer            = ui8GPIOPinAddressArray[6] ;
+        *I2CSDAPinAddressVariablePointer            = ui8GPIOPinAddressArray[7] ;
+        break;
+    case I2C2: // SCL: PE4 SDA: PE5
+        *I2CPeripheralAddressVariablePointer        = ui32I2CPeripheralAddressArray[2] ;
+        *I2CBaseAddressVariablePointer              = ui32I2CBaseAddressArray[2] ;
+        *I2CGPIOPeripheralAddressVariablePointer    = ui32GPIOPeripheralAddressArray[4] ; // I2C2 is at Port E.
+        *I2CGPIOBaseAddressVariablePointer          = ui32GPIOBaseAddressArray[4] ;
+        *I2CSCLPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[2][0] ;
+        *I2CSDAPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[2][1] ;
+        *I2CSCLPinAddressVariablePointer            = ui8GPIOPinAddressArray[4] ;
+        *I2CSDAPinAddressVariablePointer            = ui8GPIOPinAddressArray[5] ;
+        break;
+    case I2C3: // SCL: PD0 SDA: PD1
+        *I2CPeripheralAddressVariablePointer        = ui32I2CPeripheralAddressArray[3] ;
+        *I2CBaseAddressVariablePointer              = ui32I2CBaseAddressArray[3] ;
+        *I2CGPIOPeripheralAddressVariablePointer    = ui32GPIOPeripheralAddressArray[3] ; // I2C3 is at Port D.
+        *I2CGPIOBaseAddressVariablePointer          = ui32GPIOBaseAddressArray[3] ;
+        *I2CSCLPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[3][0] ;
+        *I2CSDAPinAltAddressVariablePointer         = ui32I2CPinsAltAddressArray[3][1] ;
+        *I2CSCLPinAddressVariablePointer            = ui8GPIOPinAddressArray[0] ;
+        *I2CSDAPinAddressVariablePointer            = ui8GPIOPinAddressArray[1] ;
+        break;
+    default:
+        break;
     }
-    return 100 ;
 }
