@@ -335,5 +335,51 @@ typedef enum PWM_PRESCALAR {
     PWM_PRESCALAR_64 = 64,
 }PWM_PRESCALAR;
 
+
+/*
+ * I2C PERIPHERAL ELEMENTS
+ */
+
+/*
+ * I2C Pin Description
+╔══════════════╦═════════╦═══════════╦══════════╗
+║  I2C-MODULE  ║  PORT   ║  SCL_PIN  ║  SDA_PIN ║
+╠══════════════╬═════════╬═══════════╬══════════╣
+║  I2C0        ║  GPIOB  ║  PB2      ║  PB3     ║
+║  I2C1        ║  GPIOA  ║  PA6      ║  PA7     ║
+║  I2C2        ║  GPIOE  ║  PE4      ║  PE5     ║
+║  I2C3        ║  GPIOD  ║  PD0      ║  PD1     ║
+╚══════════════╩═════════╩═══════════╩══════════╝
+ */
+typedef enum I2C_PERIPHERAL {
+    I2C0 = 0 ,
+    I2C1 = 1 ,
+    I2C2 = 2 ,
+    I2C3 = 3
+}I2C_PERIPHERAL;
+
+
+static const uint32_t ui32I2CPeripheralAddressArray[4] = {
+        SYSCTL_PERIPH_I2C0,
+        SYSCTL_PERIPH_I2C1,
+        SYSCTL_PERIPH_I2C2,
+        SYSCTL_PERIPH_I2C3
+};
+
+
+static const uint32_t ui32I2CBaseAddressArray[4] = {
+        I2C0_BASE,
+        I2C1_BASE,
+        I2C2_BASE,
+        I2C3_BASE
+};
+
+static const uint32_t ui32I2CPinsAltAddressArray[4][2] = {
+        {GPIO_PB2_I2C0SCL, GPIO_PB3_I2C0SDA},
+        {GPIO_PA6_I2C1SCL, GPIO_PA7_I2C1SDA},
+        {GPIO_PE4_I2C2SCL, GPIO_PE5_I2C2SDA},
+        {GPIO_PD0_I2C3SCL, GPIO_PD1_I2C3SDA}
+};
+
 #endif
 #endif
