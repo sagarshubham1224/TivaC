@@ -59,14 +59,14 @@
 #include "stdbool.h"
 #include "stdint.h"
 #include "math.h"
-#include "ss_TIME.h"
-#include "ss_UART.h"
+#include "TIMER.h"
+#include "UART.h"
 #ifdef MPU9250_USE_SSI
 #include "ss_SSI.h"
 #include "ss_GPIO.h"
 #endif
 #ifdef MPU9250_USE_I2C
-#include "ss_I2C.h"
+#include "I2C.h"
 #endif
 #include "MPU9250_REGISTERS.h"
 
