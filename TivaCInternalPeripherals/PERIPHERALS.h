@@ -388,22 +388,33 @@ static const uint32_t ui32I2CPinsAltAddressArray[4][2] = {
 /*
  *  SSI Pin Values
  *
-╔══════════════╦═════════════╦═══════════╦══════════╦═════════╗
-║  SSI Module  ║  CLOCK PIN  ║  FSS PIN  ║  RX PIN  ║  TX PIN ║
-╠══════════════╬═════════════╬═══════════╬══════════╬═════════╣
-║    SSI0      ║     PA2     ║    PA3    ║    PA4   ║    PA5  ║
-║    SSI1(F)   ║     PF2     ║    PF3    ║    PF0   ║    PF1  ║
-║    SSI1(D)   ║     PD0     ║    PD1    ║    PD2   ║    PD3  ║
-║    SSI2      ║     PB4     ║    PB5    ║    PB6   ║    PB7  ║
-║    SSI3      ║     PD0     ║    PD1    ║    PD2   ║    PD3  ║
-╚══════════════╩═════════════╩═══════════╩══════════╩═════════╝
+╔═══════════════╦═════════════╦═══════════╦══════════╦═════════╗
+║  SSI Module   ║  CLOCK PIN  ║  FSS PIN  ║  RX PIN  ║  TX PIN ║
+╠═══════════════╬═════════════╬═══════════╬══════════╬═════════╣
+║    SSI0       ║     PA2     ║    PA3    ║    PA4   ║    PA5  ║
+║    SSI1(F)    ║     PF2     ║    PF3    ║    PF0   ║    PF1  ║
+║    SSI1(D)X   ║     PD0     ║    PD1    ║    PD2   ║    PD3  ║
+║    SSI2       ║     PB4     ║    PB5    ║    PB6   ║    PB7  ║
+║    SSI3       ║     PD0     ║    PD1    ║    PD2   ║    PD3  ║
+╚═══════════════╩═════════════╩═══════════╩══════════╩═════════╝
  */
 typedef enum SSI_PERIPHERAL {
     SSI0 = 0,
-    SSI1_F = 1,
-    SSI1_D = 2,
+    SSI1 = 1,
     SSI2 = 3,
     SSI3 = 4
 }SSI_PERIPHERAL;
+// We Bind SSI1 to Port F, as SSI1(D) and SSI3 are identical.
+
+
+static const uint32_t ui32SSIPeripheralAddressArray[4] = {
+                                                          SYSCTL_PERIPH_SSI0, SYSCTL_PERIPH_SSI1,
+                                                          SYSCTL_PERIPH_SSI2, SYSCTL_PERIPH_SSI3
+} ;
+
+static const uint32_t ui32SSIBaseAddressArray[4] = {
+                                                    SSI0_BASE, SSI1_BASE,
+                                                    SSI2_BASE, SSI3_BASE
+} ;
 #endif
 #endif
