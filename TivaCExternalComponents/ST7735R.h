@@ -13,6 +13,8 @@
 #include "stdbool.h"
 #include "stdarg.h"
 #include "string.h"
+#include "inc/hw_gpio.h"
+#include "inc/hw_types.h"
 //#include "math.h"
 #include "TIMER.h"
 #include "SSI.h"
@@ -91,8 +93,11 @@ typedef enum ST7735_SUPPORTED_FONTS {
 
 #define ST7735_SSI_CLOCK_FREQUENCY						25000000
 #define ST7735_SSI_DATA_WIDTH							8
-#define ST777735_SSI_CPOL_CPHA_SETINGS                  SSI_FRAME_FORMAT_CPOL0_CPHA0
+#define ST7735_SSI_CPOL_CPHA_SETINGS                    SSI_FRAME_FORMAT_CPOL0_CPHA0
+#define ST7735_USE_INTERNAL_CS                          true            // Comment this line to not use internal CS or FSS.
 
+#define  USE_HW_HACK_16_BITS   HWREG(ST7735DevicePointer->ST7735SSIDevice.SSIBase + SSI_O_CR0) |= 0xF
+#define  USE_HW_HACK_8_BITS   HWREG(ST7735DevicePointer->ST7735SSIDevice.SSIBase + SSI_O_CR0) &= ~(0xB)
 
 #define ST7735_NO_OPERATION								0x00
 #define ST7735_SOFTWARE_RESET_COMMAND					0x01
@@ -156,12 +161,14 @@ typedef enum ST7735_SUPPORTED_FONTS {
 
 extern ST7735* initialize_ST7735(ST7735* ST7735DevicePointer,
                                  SSI_PERIPHERAL SSIPeripheralCode ,
+#ifndef ST7735_USE_INTERNAL_CS
                                  GPIO_PIN_CODE chipSelectPinCode,
+#endif
                                  GPIO_PIN_CODE dataCommandPinCode,
                                  GPIO_PIN_CODE resetPinCode) ;
 //                                 char chipSelectPinPortLetter, uint8_t chipSelectPinNumber,
-  //                               char dataCommandPinPortLetter,uint8_t dataCommandPinNumber,
-    //                             char resetPinPortLetter, uint8_t resetPinNumber) ;
+//                               char dataCommandPinPortLetter,uint8_t dataCommandPinNumber,
+//                             char resetPinPortLetter, uint8_t resetPinNumber) ;
 
 extern void setFont_ST7735(ST7735* ST7735DevicePointer, ST7735_SUPPORTED_FONTS fontValue) ;
 
@@ -210,17 +217,17 @@ extern void drawcircle_ST7735(ST7735* ST7735DevicePointer,
 
 
 extern writeSingleCharacter_ST7735(ST7735* ST7735DevicePointer,
-                                uint8_t xPos, uint8_t yPos,
-                                char letter,
-                                uint16_t letterColor) ;
+                                   uint8_t xPos, uint8_t yPos,
+                                   char letter,
+                                   uint16_t letterColor) ;
 
 extern void writeSingleLineString_ST7735(ST7735* ST7735DevicePointer,
-                                   uint8_t xPos, uint8_t yPos,
-                                   uint8_t *nextXPosPointer, uint8_t *nextYPosPointer,
-                                   uint8_t originalXPos,
-                                   const char* stringBuffer, uint8_t stringLength,
-                                   uint16_t stringColor,
-                                   bool bAlignText) ;
+                                         uint8_t xPos, uint8_t yPos,
+                                         uint8_t *nextXPosPointer, uint8_t *nextYPosPointer,
+                                         uint8_t originalXPos,
+                                         const char* stringBuffer, uint8_t stringLength,
+                                         uint16_t stringColor,
+                                         bool bAlignText) ;
 
 extern void writeString_ST7735(ST7735* ST7735DevicePointer,
                                uint8_t xPos, uint8_t yPos,
@@ -259,8 +266,9 @@ static void sendChipValue_ST7735(ST7735* ST7735DevicePointer, ST7735_DATA_OR_COM
 
 
 static inline void setChipDataCommandState_ST7735(ST7735* ST7735DevicePointer, ST7735_DATA_OR_COMMAND dataOrCommand) ;
+#ifndef ST7735_USE_INTERNAL_CS
 static inline void setChipSelectState_ST7735(ST7735* ST7735DevicePointer, ST7735_CHIP_SELECT_OR_UNSELECT chipState) ;
-
+#endif
 
 static void hardReset_ST7735(ST7735* ST7735DevicePointer);
 static void softReset_ST7735(ST7735* ST7735DevicePointer) ;

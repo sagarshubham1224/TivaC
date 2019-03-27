@@ -15,39 +15,55 @@
 ╚══════════════╩═════════════╩═══════════╩══════════╩═════════╝
  */
 
-static const uint32_t ui32SSIPeripheralAddressArray[4] = {
-                                                          SYSCTL_PERIPH_SSI0, SYSCTL_PERIPH_SSI1,
-                                                          SYSCTL_PERIPH_SSI2, SYSCTL_PERIPH_SSI3
-} ;
-
-static const uint32_t ui32SSIBaseAddressArray[4] = {
-                                                    SSI0_BASE, SSI1_BASE,
-                                                    SSI2_BASE, SSI3_BASE
-} ;
 
 
 
 
-extern SSIDEVICE* initSSIDEVICE(    SSIDEVICE* SSIDevicePointer,
-                                    SSI_PERIPHERAL SSIPeripheralCode ,
-                                    uint32_t SSIClockFrequency,
-                                    uint32_t SSIDataWidth, SSI_FRAME_FORMAT frameFormat,
-                                    FSS_RX_PIN_USAGE FSSPinUse, FSS_RX_PIN_USAGE SSIRXPinUse)
+
+
+
+extern void initSSIDEVICE(    SSIDEVICE* SSIDevicePointer,
+                                     SSI_PERIPHERAL SSIPeripheralCode ,
+                                     uint32_t SSIClockFrequency,
+                                     uint32_t SSIDataWidth, SSI_FRAME_FORMAT frameFormat,
+                                     FSS_RX_PIN_USAGE FSSPinUse, FSS_RX_PIN_USAGE SSIRxPinUse)
 {
-    uint8_t SSIPeripheralNumber = getSSIPeripheralNumber(SSIPeripheralCode) ;
-    char SSIGPIOPortLetter = getSSIGPIOPortLetter(SSIPeripheralCode) ;
-    SSIDevicePointer->SSIBase = getSSIBaseAddress(SSIPeripheralNumber) ;
-    SysCtlPeripheralEnable(getSSIPeripheralAddress(SSIPeripheralNumber)) ;
-    SysCtlPeripheralEnable(getSSIGPIOPeripheralAddress(SSIGPIOPortLetter)) ;
+    uint32_t SSIPeripheralAddress, SSIBaseAddress, SSIGPIOPeripheralAddress, SSIGPIOBaseAddress ;
+    uint32_t SSIClockPinAlternateAddress, SSIFSSPinAlternateAddress, SSIRxPinAlternateAddress, SSITxPinAlternateAddress ;
+    uint8_t SSIGPIOPinValues ;
+    getSSISauce(SSIPeripheralCode,
+                 &SSIPeripheralAddress,
+                 &SSIBaseAddress,
+                 &SSIGPIOPeripheralAddress,
+                 &SSIGPIOBaseAddress,
+                 &SSIClockPinAlternateAddress,
+                 &SSIFSSPinAlternateAddress,
+                 &SSIRxPinAlternateAddress,
+                 &SSITxPinAlternateAddress,
+                 &SSIGPIOPinValues,
+                 FSSPinUse,
+                 SSIRxPinUse);
+    SSIDevicePointer->SSIBase = SSIBaseAddress ;
+    SysCtlPeripheralEnable(SSIPeripheralAddress) ;
+    while(!SysCtlPeripheralReady(SSIPeripheralAddress));
+    if(!SysCtlPeripheralReady(SSIGPIOPeripheralAddress))
+    {
+        SysCtlPeripheralEnable(SSIGPIOPeripheralAddress) ;
+        while(!SysCtlPeripheralReady(SSIGPIOPeripheralAddress));
+    }
+    GPIOPinConfigure(SSIClockPinAlternateAddress) ;
+    if(FSSPinUse)   GPIOPinConfigure(SSIFSSPinAlternateAddress) ;
+    if(SSIRxPinUse) GPIOPinConfigure(SSIRxPinAlternateAddress) ;
+    GPIOPinConfigure(SSITxPinAlternateAddress) ;
 
-    GPIOPinConfigure(getSSISauce(SSIPeripheralNumber, SSIGPIOPortLetter,FSSPinUse, SSIRXPinUse, GET_CLK)) ;
-    if(FSSPinUse)   GPIOPinConfigure(getSSISauce(SSIPeripheralNumber,SSIGPIOPortLetter,FSSPinUse, SSIRXPinUse, GET_FSS)) ;
-    if(SSIRXPinUse) GPIOPinConfigure(getSSISauce(SSIPeripheralNumber,SSIGPIOPortLetter,FSSPinUse, SSIRXPinUse, GET_SRX)) ;
-    GPIOPinConfigure(getSSISauce(SSIPeripheralNumber,SSIGPIOPortLetter,FSSPinUse, SSIRXPinUse, GET_STX)) ;
+    GPIOPinTypeSSI(SSIGPIOBaseAddress, SSIGPIOPinValues) ;
 
-    GPIOPinTypeSSI(getSSIGPIOBaseAddress(SSIGPIOPortLetter), (uint8_t)getSSISauce(SSIPeripheralNumber,SSIGPIOPortLetter,FSSPinUse, SSIRXPinUse, GET_PTS)) ;
-
-    SSIConfigSetExpClk(SSIDevicePointer->SSIBase,SysCtlClockGet(),frameFormat,SSI_MODE_MASTER,SSIClockFrequency,SSIDataWidth) ;
+    SSIConfigSetExpClk(SSIDevicePointer->SSIBase,
+                       SysCtlClockGet(),
+                       frameFormat,
+                       SSI_MODE_MASTER,
+                       SSIClockFrequency,
+                       SSIDataWidth) ;
 
     SSIEnable(SSIDevicePointer->SSIBase) ;
 
@@ -55,46 +71,10 @@ extern SSIDEVICE* initSSIDEVICE(    SSIDEVICE* SSIDevicePointer,
     while(SSIDataGetNonBlocking(SSIDevicePointer->SSIBase, &SSIDevicePointer->receiverData)) ;
     SSIDevicePointer->receiverData = 0 ;
 
-    return SSIDevicePointer ;
 
 }
 
-static uint32_t getSSIPeripheralNumber(SSI_PERIPHERAL SSIPeripheralCode)
-{
-    switch (SSIPeripheralCode) {
-        case SSI0:
-            return 0 ;
-        case SSI1_D :
-        case SSI1_F :
-            return 1 ;
-        case SSI2 :
-            return 2 ;
-        case SSI3 :
-            return 3 ;
-        default :
-            break ;
-    }
-    return 100 ;
-}
 
-static char getSSIGPIOPortLetter(SSI_PERIPHERAL SSIPeripheralCode)
-{
-
-    switch (SSIPeripheralCode) {
-        case SSI0:
-            return 'A' ;
-        case SSI1_F :
-            return 'F' ;
-        case SSI2 :
-            return 'B' ;
-        case SSI3 :
-        case SSI1_D :
-            return 'D' ;
-        default :
-            break ;
-    }
-    return 100 ;
-}
 extern void SSIWriteValue(SSIDEVICE* SSIDevicePointer, uint32_t value)
 {
     //    SSIDataPut(SSIDevicePointer->SSIBase,value) ;
@@ -120,129 +100,128 @@ extern uint32_t SSIReadValue(SSIDEVICE* SSIDevicePointer)
     return SSIDevicePointer->receiverData ;
 }
 
-
-static uint32_t getSSISauce(uint8_t SSIPeripheralNumber, char SSIGPIOPortLetter,
-                            FSS_RX_PIN_USAGE FSSPinUse, FSS_RX_PIN_USAGE SSIRXPinUse, uint8_t returnType)
+extern uint8_t SSIReadDataWidth(SSIDEVICE* SSIDevicePointer)
 {
-    uint32_t SSIClockVal    = 0 ;
-    uint32_t SSIFSSVal      = 0 ;
-    uint32_t SSIRXVal       = 0 ;
-    uint32_t SSITXVal       = 0 ;
-    uint32_t GPIOPins       = 0 ;
-    uint32_t returnVal      = 0 ;
+    return (uint8_t)(HWREG(SSIDevicePointer->SSIBase + SSI_O_CR0) & 0xF) ; // return DSS Page 961 on Datasheet.
+}
 
-    switch ( SSIPeripheralNumber )
+extern void SSISetDataWidth(SSIDEVICE* SSIDevicePointer, uint8_t dataWidth)
+{
+    if(dataWidth <4 || dataWidth >16)
+        return ;
+    else
     {
-    case 0:
-        SSIClockVal = GPIO_PA2_SSI0CLK ;
-        SSIFSSVal   = GPIO_PA3_SSI0FSS ;
-        SSIRXVal    = GPIO_PA4_SSI0RX ;
-        SSITXVal    = GPIO_PA5_SSI0TX ;
-        GPIOPins    = GPIO_PIN_2 | GPIO_PIN_5 ;
-        if(FSSPinUse)   GPIOPins |= GPIO_PIN_3 ;
-        if(SSIRXPinUse) GPIOPins |= GPIO_PIN_4 ;
-        break ;
-    case 1:
-        if( SSIGPIOPortLetter == 'F' )
+        // Clear DSS Bits.
+        HWREG(SSIDevicePointer->SSIBase + SSI_O_CR0) &= ~(0xF) ;
+        // Set New DSS Bits.
+        HWREG(SSIDevicePointer->SSIBase + SSI_O_CR0) |= ((dataWidth-1) & 0xF) ;
+    }
+}
+
+
+
+
+
+static void getSSISauce(SSI_PERIPHERAL SSIPeripheralCode,
+                         uint32_t* SSIPeripheralAddressVariablePointer,
+                         uint32_t* SSIBaseAddressVariablePointer,
+                         uint32_t* SSIGPIOPeripheralAddressVariablePointer,
+                         uint32_t* SSIGPIOBaseAddressVariablePointer,
+                         uint32_t* SSIClockPinAlternateAddressVariablePointer,
+                         uint32_t* SSIFSSPinAlternateAddressVariablePointer,
+                         uint32_t* SSIRxPinAlternateAddressVariablePointer,
+                         uint32_t* SSITxPinAlternateAddressVariablePointer,
+                         uint8_t* SSIGPIOPinValuesVariablePointer,
+                         FSS_RX_PIN_USAGE SSIFSSPinUse,
+                         FSS_RX_PIN_USAGE SSIRxPinUse)
+{
+    switch (SSIPeripheralCode) {
+    case SSI0: // Port A.
+        *SSIPeripheralAddressVariablePointer =          ui32SSIPeripheralAddressArray[0] ;
+        *SSIBaseAddressVariablePointer =                ui32SSIBaseAddressArray[0] ;
+        *SSIGPIOPeripheralAddressVariablePointer =      ui32GPIOPeripheralAddressArray[0] ;
+        *SSIGPIOBaseAddressVariablePointer =            ui32GPIOBaseAddressArray[0] ;
+        *SSIClockPinAlternateAddressVariablePointer =   GPIO_PA2_SSI0CLK ;
+        *SSIFSSPinAlternateAddressVariablePointer =     GPIO_PA3_SSI0FSS ;
+        *SSIRxPinAlternateAddressVariablePointer =      GPIO_PA4_SSI0RX ;
+        *SSITxPinAlternateAddressVariablePointer =      GPIO_PA5_SSI0TX ;
+        *SSIGPIOPinValuesVariablePointer =              GPIO_PIN_2 | GPIO_PIN_5 ;
+        if(SSIFSSPinUse == SET_FSS_PIN)
         {
-            SSIClockVal = GPIO_PF2_SSI1CLK ;
-            SSIFSSVal   = GPIO_PF3_SSI1FSS ;
-            SSIRXVal    = GPIO_PF0_SSI1RX ;
-            SSITXVal    = GPIO_PF1_SSI1TX ;
-            GPIOPins    = GPIO_PIN_1 | GPIO_PIN_2  ;
-            if(FSSPinUse)   GPIOPins |= GPIO_PIN_3 ;
-            if(SSIRXPinUse) GPIOPins |= GPIO_PIN_0 ;
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_3 ;
         }
-        else if( SSIGPIOPortLetter == 'D' )
+        if(SSIRxPinUse == SET_SSIRX_PIN)
         {
-            SSIClockVal = GPIO_PD0_SSI1CLK ;
-            SSIFSSVal   = GPIO_PD1_SSI1FSS ;
-            SSIRXVal    = GPIO_PD2_SSI1RX ;
-            SSITXVal    = GPIO_PD3_SSI1TX ;
-            GPIOPins    = GPIO_PIN_0 | GPIO_PIN_3  ;
-            if(FSSPinUse)   GPIOPins |= GPIO_PIN_1 ;
-            if(SSIRXPinUse) GPIOPins |= GPIO_PIN_2 ;
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_4 ;
         }
-        break ;
-    case 2:
-        SSIClockVal = GPIO_PB4_SSI2CLK ;
-        SSIFSSVal   = GPIO_PB5_SSI2FSS ;
-        SSIRXVal    = GPIO_PB6_SSI2RX ;
-        SSITXVal    = GPIO_PB7_SSI2TX ;
-        GPIOPins    = GPIO_PIN_4 | GPIO_PIN_7  ;
-        if(FSSPinUse)   GPIOPins |= GPIO_PIN_5 ;
-        if(SSIRXPinUse) GPIOPins |= GPIO_PIN_6 ;
-        break ;
-    case 3:
-        SSIClockVal = GPIO_PD0_SSI3CLK ;
-        SSIFSSVal   = GPIO_PD1_SSI3FSS ;
-        SSIRXVal    = GPIO_PD2_SSI3RX ;
-        SSITXVal    = GPIO_PD3_SSI3TX ;
-        GPIOPins    = GPIO_PIN_0 | GPIO_PIN_3  ;
-        if(FSSPinUse)   GPIOPins |= GPIO_PIN_1 ;
-        if(SSIRXPinUse) GPIOPins |= GPIO_PIN_2 ;
-        break ;
+        break;
+    case SSI1: // Port F.
+        *SSIPeripheralAddressVariablePointer =          ui32SSIPeripheralAddressArray[1] ;
+        *SSIBaseAddressVariablePointer =                ui32SSIBaseAddressArray[1] ;
+        *SSIGPIOPeripheralAddressVariablePointer =      ui32GPIOPeripheralAddressArray[5] ;
+        *SSIGPIOBaseAddressVariablePointer =            ui32GPIOBaseAddressArray[5] ;
+        *SSIClockPinAlternateAddressVariablePointer =   GPIO_PF2_SSI1CLK ;
+        *SSIFSSPinAlternateAddressVariablePointer =     GPIO_PF3_SSI1FSS ;
+        *SSIRxPinAlternateAddressVariablePointer =      GPIO_PF0_SSI1RX ;
+        *SSITxPinAlternateAddressVariablePointer =      GPIO_PF1_SSI1TX ;
+        *SSIGPIOPinValuesVariablePointer =              GPIO_PIN_2 | GPIO_PIN_1 ;
+        if(SSIFSSPinUse == SET_FSS_PIN)
+        {
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_3 ;
+        }
+        if(SSIRxPinUse == SET_SSIRX_PIN)
+        {
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_0 ;
+        }
+    case SSI2: // Port B.
+        *SSIPeripheralAddressVariablePointer =          ui32SSIPeripheralAddressArray[2] ;
+        *SSIBaseAddressVariablePointer =                ui32SSIBaseAddressArray[2] ;
+        *SSIGPIOPeripheralAddressVariablePointer =      ui32GPIOPeripheralAddressArray[1] ;
+        *SSIGPIOBaseAddressVariablePointer =            ui32GPIOBaseAddressArray[1] ;
+        *SSIClockPinAlternateAddressVariablePointer =   GPIO_PB4_SSI2CLK ;
+        *SSIFSSPinAlternateAddressVariablePointer =     GPIO_PB5_SSI2FSS ;
+        *SSIRxPinAlternateAddressVariablePointer =      GPIO_PB6_SSI2RX ;
+        *SSITxPinAlternateAddressVariablePointer =      GPIO_PB7_SSI2TX ;
+        *SSIGPIOPinValuesVariablePointer =              GPIO_PIN_4 | GPIO_PIN_7 ;
+        if(SSIFSSPinUse == SET_FSS_PIN)
+        {
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_5 ;
+        }
+        if(SSIRxPinUse == SET_SSIRX_PIN)
+        {
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_6 ;
+        }
+        break;
+    case SSI3: // Port F.
+        *SSIPeripheralAddressVariablePointer =          ui32SSIPeripheralAddressArray[3] ;
+        *SSIBaseAddressVariablePointer =                ui32SSIBaseAddressArray[3] ;
+        *SSIGPIOPeripheralAddressVariablePointer =      ui32GPIOPeripheralAddressArray[3] ;
+        *SSIGPIOBaseAddressVariablePointer =            ui32GPIOBaseAddressArray[3] ;
+        *SSIClockPinAlternateAddressVariablePointer =   GPIO_PD0_SSI3CLK ;
+        *SSIFSSPinAlternateAddressVariablePointer =     GPIO_PD1_SSI3FSS ;
+        *SSIRxPinAlternateAddressVariablePointer =      GPIO_PD2_SSI3RX ;
+        *SSITxPinAlternateAddressVariablePointer =      GPIO_PD3_SSI3TX ;
+        *SSIGPIOPinValuesVariablePointer =              GPIO_PIN_0 | GPIO_PIN_3 ;
+        if(SSIFSSPinUse == SET_FSS_PIN)
+        {
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_1 ;
+        }
+        if(SSIRxPinUse == SET_SSIRX_PIN)
+        {
+            *SSIGPIOPinValuesVariablePointer |=         GPIO_PIN_2 ;
+        }
+        break;
     default:
-        break ;
+        break;
     }
 
-    switch (returnType)
-    {
-    case GET_CLK:
-        returnVal = SSIClockVal ;
-        break ;
-    case GET_FSS:
-        returnVal = SSIFSSVal ;
-        break ;
-    case GET_SRX:
-        returnVal = SSIRXVal ;
-        break ;
-    case GET_STX:
-        returnVal = SSITXVal ;
-        break ;
-    case GET_PTS:
-        returnVal = GPIOPins ;
-        break ;
-    default:
-        break ;
-    }
-    return returnVal ;
-
 }
 
 
 
-static uint32_t getSSIBaseAddress(uint8_t SSIPeripheralNumber)
-{
-    return ui32SSIBaseAddressArray[SSIPeripheralNumber] ;
-}
-
-static uint32_t getSSIPeripheralAddress(uint8_t SSIPeripheralNumber)
-{
-    return ui32SSIPeripheralAddressArray[SSIPeripheralNumber] ;
-}
-
-/*
- * Function to get GPIO Peripheral address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  char SSIGPIOPortLetter                          :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address Of GPIO Peripheral         :: Depending upon passed argument, the appropriate value from array ui32GPIOPeripheralAddressArray is returned.
- */
-static uint32_t getSSIGPIOPeripheralAddress(char SSIGPIOPortLetter)
-{
-    return ui32GPIOPeripheralAddressArray[(uint8_t)(SSIGPIOPortLetter - 'A')] ;
-}
 
 
-/*
- * Function to get GPIO Base Address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  uint8_t SSIGPIOPortLetter                       :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address of GPIO Base               :: Depending upon passed argument, the appropriate value from array ui32PGPIOBaseAddressArray is returned.
- */
-static uint32_t getSSIGPIOBaseAddress(char SSIGPIOPortLetter)
-{
-    return ui32GPIOBaseAddressArray[(uint8_t)(SSIGPIOPortLetter - 'A')] ;
-}
+
+
+
+

@@ -22,20 +22,41 @@ static char binaryStringBuffer[BINARY_STRING_BUFFER_SIZE] = {
 //Initialization Method.
 extern ST7735* initialize_ST7735(ST7735* ST7735DevicePointer,
                                  SSI_PERIPHERAL SSIPeripheralCode ,
+#ifndef ST7735_USE_INTERNAL_CS
                                  GPIO_PIN_CODE chipSelectPinCode,
+#endif
                                  GPIO_PIN_CODE dataCommandPinCode,
                                  GPIO_PIN_CODE resetPinCode)
 {
     milliSecondDelay(200) ;
+#ifndef ST7735_USE_INTERNAL_CS
     initGPIO(&ST7735DevicePointer->chipSelectPin,chipSelectPinCode,OUTPUT) ;
     setChipSelectState_ST7735(ST7735DevicePointer, ST7735_CHIP_UNSELECT) ;
+#endif
     initGPIO(&ST7735DevicePointer->dataCommandPin, dataCommandPinCode, OUTPUT) ;
     initGPIO(&ST7735DevicePointer->resetPin, resetPinCode, OUTPUT) ;
     hardReset_ST7735(ST7735DevicePointer) ;
 
-    initSSIDEVICE(&ST7735DevicePointer->ST7735SSIDevice, SSIPeripheralCode,ST7735_SSI_CLOCK_FREQUENCY,
-                  ST7735_SSI_DATA_WIDTH,ST777735_SSI_CPOL_CPHA_SETINGS, LEAVE_FSS_PIN,LEAVE_SSIRX_PIN) ;
 
+    FSS_RX_PIN_USAGE FSSPinUsage ;
+#ifndef ST7735_USE_INTERNAL_CS
+    FSSPinUsage = LEAVE_FSS_PIN ;
+#else
+    FSSPinUsage = SET_FSS_PIN ;
+#endif
+    initSSIDEVICE(&ST7735DevicePointer->ST7735SSIDevice, SSIPeripheralCode, ST7735_SSI_CLOCK_FREQUENCY,
+                  ST7735_SSI_DATA_WIDTH, ST7735_SSI_CPOL_CPHA_SETINGS, FSSPinUsage, LEAVE_SSIRX_PIN) ;
+
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, 0xFF) ;
+    //
+    //    milliSecondDelay(1000000) ;
 
     /*
      * Step 1. Soft Reset the TFT LCD.
@@ -225,7 +246,9 @@ extern void drawPixel_ST7735(ST7735* ST7735DevicePointer, uint8_t x0, uint8_t y0
     setAddressWindow_ST7735(ST7735DevicePointer, x0, y0, x0+1, y0+1) ;
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, pixelColor >> 8) ;
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, pixelColor & 0xFF) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer, ST7735_CHIP_UNSELECT) ;
+#endif
 }
 extern inline void drawVerticalLine_ST7735(ST7735* ST7735DevicePointer,
                                            uint8_t x0, uint8_t y0, uint8_t lineLength,uint16_t lineColor)
@@ -238,7 +261,9 @@ extern inline void drawVerticalLine_ST7735(ST7735* ST7735DevicePointer,
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,lineColor8LSB) ;
         ++y0 ;
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
 
 }
 extern inline void drawHorizontalLine_ST7735(ST7735* ST7735DevicePointer,
@@ -252,7 +277,9 @@ extern inline void drawHorizontalLine_ST7735(ST7735* ST7735DevicePointer,
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,lineColor8LSB) ;
         ++x0 ;
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
 
 }
 
@@ -368,7 +395,9 @@ extern void drawSolidRectangle_ST7735(ST7735* ST7735DevicePointer,
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,rectangleColor8MSB) ;
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,rectangleColor8LSB) ;
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
 
 }
 
@@ -416,7 +445,7 @@ extern writeSingleCharacter_ST7735(ST7735* ST7735DevicePointer,
                                    uint8_t xPos, uint8_t yPos,
                                    char character,
                                    uint16_t letterColor)
-                                        {
+                                                                {
     setAddressWindow_ST7735(ST7735DevicePointer, xPos, yPos,
                             xPos + ST7735DevicePointer->usedFont.fontWidth -1,
                             yPos + ST7735DevicePointer->usedFont.fontHeight - 1) ;
@@ -442,8 +471,10 @@ extern writeSingleCharacter_ST7735(ST7735* ST7735DevicePointer,
             characterWidthValue = characterWidthValue << 1 ;
         }
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer, ST7735_CHIP_UNSELECT) ;
-                                        }
+#endif
+                                                                }
 
 extern void writeSingleLineString_ST7735(ST7735* ST7735DevicePointer,
                                          uint8_t xPos, uint8_t yPos,
@@ -494,7 +525,9 @@ extern void writeSingleLineString_ST7735(ST7735* ST7735DevicePointer,
             }
         }
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer, ST7735_CHIP_UNSELECT) ;
+#endif
 
 }
 extern void writeString_ST7735(ST7735* ST7735DevicePointer,
@@ -793,7 +826,7 @@ static void writeText_ST7735vaList(ST7735* ST7735DevicePointer,
             {
                 ui32Value = (va_arg(vaList, uint32_t));
                 uint8_t binaryStringSize = intToBinaryString(ui32Value,BINARY_SIZE_08,binaryStringBuffer);
-                  writeString_ST7735(ST7735DevicePointer,
+                writeString_ST7735(ST7735DevicePointer,
                                    xPos, yPos,
                                    &nextXPos, &nextYPos,
                                    originalXPos,
@@ -838,17 +871,25 @@ void writeText_ST7735(ST7735* ST7735DevicePointer,
 
 extern void fillTFT_ST7735(ST7735* ST7735DevicePointer, uint16_t screenColor)
 {
-    uint8_t color8LSB = screenColor & 0xFF , color8MSB = screenColor >> 8 ;
 
     uint16_t  xPos = 0 ;
     setAddressWindow_ST7735(ST7735DevicePointer,0,0,ST7735DevicePointer->width-1,ST7735DevicePointer->height-1) ;
+    USE_HW_HACK_16_BITS ;
+//    SSISetDataWidth(&ST7735DevicePointer->ST7735SSIDevice, 16) ;
 
     for( ;xPos < ST7735_TOTAL_PIXELS ;++xPos)
     {
-        SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,color8MSB) ;
-        SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,color8LSB) ;
+        //        SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,color8MSB) ;
+        //        SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,color8LSB) ;
+        SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, screenColor) ;
     }
+
+    USE_HW_HACK_8_BITS ;
+//    SSISetDataWidth(&ST7735DevicePointer->ST7735SSIDevice, 8) ;
+
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
 
 }
 
@@ -862,7 +903,9 @@ extern void clearScreen_ST7735(ST7735* ST7735DevicePointer)
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
 }
 
 static void setAddressWindow_ST7735(ST7735* ST7735DevicePointer,
@@ -873,29 +916,34 @@ static void setAddressWindow_ST7735(ST7735* ST7735DevicePointer,
 
     // Write the Column Address Set Command.
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_COMMAND) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_SELECT) ;
+#endif
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,ST7735_COLUMN_ADDRESS_SET_COMMAND) ;
     // Write Parameters.
+    USE_HW_HACK_16_BITS ;
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_DATA) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,x_start) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,x_end) ;
+//    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
+    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,(uint16_t)x_start) ;
+//    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
+    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,(uint16_t)x_end) ;
+    USE_HW_HACK_8_BITS ;
 
     // Write the Row Address Set Command.
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_COMMAND) ;
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,ST7735_ROW_ADDRESS_SET_COMMAND) ;
     // Write Parameters.
+    USE_HW_HACK_16_BITS ;
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_DATA) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,y_start) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
-    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,y_end) ;
+//    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
+    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,(uint16_t)y_start) ;
+//    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,0x00) ;
+    SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,(uint16_t)y_end) ;
+    USE_HW_HACK_8_BITS ;
     // Write Memory Write Command.
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_COMMAND) ;
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, ST7735_MEMORY_WRITE_COMMAND) ;
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_DATA) ;
-
 }
 
 
@@ -908,7 +956,9 @@ static void sendChipCommandParameters_ST7735 (ST7735* ST7735DevicePointer, uint8
 
     // Write the Command.
     setChipDataCommandState_ST7735(ST7735DevicePointer,ST7735_COMMAND) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_SELECT) ;
+#endif
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,st7735Command) ;
 
     //Write Parameters.
@@ -918,7 +968,9 @@ static void sendChipCommandParameters_ST7735 (ST7735* ST7735DevicePointer, uint8
         SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, va_arg(parameterList,uint8_t)) ;
         numOfParameters -= 1 ;
     }
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
 
 
 }
@@ -928,21 +980,43 @@ static void sendChipCommandParameters_ST7735 (ST7735* ST7735DevicePointer, uint8
 static void sendChipValue_ST7735(ST7735* ST7735DevicePointer, ST7735_DATA_OR_COMMAND dataOrCommand, uint8_t value)
 {
     setChipDataCommandState_ST7735(ST7735DevicePointer, dataOrCommand) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_SELECT) ;
+#endif
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice, value) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_SELECT) ;
+#endif
 }
 
 
 static inline void setChipDataCommandState_ST7735(ST7735* ST7735DevicePointer, ST7735_DATA_OR_COMMAND dataOrCommand)
 {
+    /*
+     *
+typedef enum ST7735_DATA_OR_COMMAND {
+    ST7735_DATA = HIGH,
+    ST7735_COMMAND = LOW
+}ST7735_DATA_OR_COMMAND ;
+
+GPIOPinWrite(gpioPointer->GPIOBase,gpioPointer->pin,gpioPointer->pin & writePinState);
+
+    HWREG(ui32Port + (GPIO_O_DATA + (ui8Pins << 2))) = ui8Val;
+     */
     digitalWrite(&ST7735DevicePointer->dataCommandPin,dataOrCommand) ;
+    //    HWREG(ST7735DevicePointer->dCBase  + (GPIO_O_DATA + (ST7735DevicePointer->dcPin<<2) ))
+    //                = ST7735DevicePointer->dcPin & dataOrCommand;
 }
+
+#ifndef ST7735_USE_INTERNAL_CS
 static inline void setChipSelectState_ST7735(ST7735* ST7735DevicePointer, ST7735_CHIP_SELECT_OR_UNSELECT chipState)
 {
     digitalWrite(&ST7735DevicePointer->chipSelectPin, chipState) ;
+    //    HWREG(ST7735DevicePointer->cSBase  + (GPIO_O_DATA + (ST7735DevicePointer->csPin<<2) ))
+    //                    = ST7735DevicePointer->csPin & chipState;
 
 }
+#endif
 
 
 
@@ -957,9 +1031,13 @@ static void hardReset_ST7735(ST7735* ST7735DevicePointer)
 static void softReset_ST7735(ST7735* ST7735DevicePointer)
 {
     setChipDataCommandState_ST7735(ST7735DevicePointer, ST7735_COMMAND) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_SELECT) ;
+#endif
     SSIWriteValue(&ST7735DevicePointer->ST7735SSIDevice,ST7735_SOFTWARE_RESET_COMMAND) ;
+#ifndef ST7735_USE_INTERNAL_CS
     setChipSelectState_ST7735(ST7735DevicePointer,ST7735_CHIP_UNSELECT) ;
+#endif
     milliSecondDelay(200) ;
 }
 

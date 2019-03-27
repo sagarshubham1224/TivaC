@@ -36,11 +36,6 @@
 ╚══════════════╩═════════════╩═══════════╩══════════╩═════════╝
  */
 
-#define GET_CLK     0
-#define GET_FSS     1
-#define GET_SRX     2
-#define GET_STX     3
-#define GET_PTS     4
 
 
 typedef enum SSI_FRAM_FORMAT {
@@ -62,12 +57,13 @@ typedef struct SSIDEVICE{
 
 //public non-static extern Functions:
 
-extern SSIDEVICE* initSSIDEVICE(    SSIDEVICE* SSIDevicePointer,
-                                    SSI_PERIPHERAL ssiPeripheralCode ,
-                                    uint32_t SSIClockFrequency,
-                                    uint32_t SSIDataWidth, SSI_FRAME_FORMAT frameFormat,
-                                    FSS_RX_PIN_USAGE FSSPinUse, FSS_RX_PIN_USAGE SSIRXPinUse) ;
 
+
+extern void initSSIDEVICE(    SSIDEVICE* SSIDevicePointer,
+                                     SSI_PERIPHERAL SSIPeripheralCode ,
+                                     uint32_t SSIClockFrequency,
+                                     uint32_t SSIDataWidth, SSI_FRAME_FORMAT frameFormat,
+                                     FSS_RX_PIN_USAGE FSSPinUse, FSS_RX_PIN_USAGE SSIRxPinUse) ;
 
 extern void SSIWriteValue(SSIDEVICE* SSIDevicePointer, uint32_t value);
 
@@ -75,35 +71,26 @@ extern void SSIWriteValue(SSIDEVICE* SSIDevicePointer, uint32_t value);
 extern uint32_t SSIReadValue(SSIDEVICE* SSIDevicePointer);
 
 
+extern void SSISetDataWidth(SSIDEVICE* SSIDevicePointer, uint8_t dataWidth) ;
+
+
+
+extern uint8_t SSIReadDataWidth(SSIDEVICE* SSIDevicePointer) ;
 //private static non-extern Functions:
-static uint32_t getSSISauce(uint8_t SSIPeripheralNumber, char GPIOPortLetter,
-        FSS_RX_PIN_USAGE FSSPinUse, FSS_RX_PIN_USAGE SSIRXPinUse, uint8_t returnType);
 
-static uint32_t getSSIBaseAddress(uint8_t SSIPeripheralNumber);
-
-static uint32_t getSSIPeripheralAddress(uint8_t SSIPeripheralNumber);
-
-/*
- * Function to get GPIO Peripheral address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  char GPIOPortLetter                         :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address Of GPIO Peripheral         :: Depending upon passed argument, the appropriate value from array ui32GPIOPeripheralAddressArray is returned.
- */
-static uint32_t getSSIGPIOPeripheralAddress(char SSIGPIOPortLetter);
+static void getSSISauce(SSI_PERIPHERAL SSIPeripheralCode,
+                             uint32_t* SSIPeripheralAddressVariablePointer,
+                             uint32_t* SSIBaseAddressVariablePointer,
+                             uint32_t* SSIGPIOPeripheralAddressVariablePointer,
+                             uint32_t* SSIGPIOBaseAddressVariablePointer,
+                             uint32_t* SSIClockPinAlternateAddressVariablePointer,
+                             uint32_t* SSIFSSPinAlternateAddressVariablePointer,
+                             uint32_t* SSIRxPinAlternateAddressVariablePointer,
+                             uint32_t* SSITxPinAlternateAddressVariablePointer,
+                             uint8_t* SSIGPIOPinValuesVariablePointer,
+                             FSS_RX_PIN_USAGE SSIFSSPinUse,
+                             FSS_RX_PIN_USAGE SSIRxPinUse) ;
 
 
-/*
- * Function to get GPIO Base Address depending upon GPIO Peripheral Letter.
- * Arguments:
- *  uint8_t GPIOPortLetter                      :: GPIO Port Letter 'A', 'B', 'C', 'D' , 'E', or 'F'.
- * Returns:
- *  uint32_t address of GPIO Base               :: Depending upon passed argument, the appropriate value from array ui32PGPIOBaseAddressArray is returned.
- */
-static uint32_t getSSIGPIOBaseAddress(char SSIGPIOPortLetter);
-
-static uint32_t getSSIPeripheralNumber(SSI_PERIPHERAL SSIPeripheralCode) ;
-
-static char getSSIGPIOPortLetter(SSI_PERIPHERAL SSIPeripheralCode) ;
 
 #endif
