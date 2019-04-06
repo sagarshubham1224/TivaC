@@ -433,6 +433,7 @@ static void getPWMPeripheralAndBaseAddress(GPIO_PIN_CODE GPIOPinCode,
     case GPIOC5:
         *PWMPeripheralAddressVariablePointer    = ui32PWMModulePeripheralAddressArray[0] ;
         *PWMBaseAddressVariablePointer          = ui32PWMModuleBaseAddressArray[0] ;
+        break ;
     case GPIOD0:
     case GPIOD1:
     case GPIOA6:
@@ -443,6 +444,7 @@ static void getPWMPeripheralAndBaseAddress(GPIO_PIN_CODE GPIOPinCode,
     case GPIOF3:
         *PWMPeripheralAddressVariablePointer    = ui32PWMModulePeripheralAddressArray[1] ;
         *PWMBaseAddressVariablePointer          = ui32PWMModuleBaseAddressArray[1] ;
+        break ;
     default:
         break;
     }
