@@ -14,7 +14,7 @@
  * Arguments:
  *  GPIO *gpioPointer                       :: Pointer to GPIO struct to be initialized.
  *  GPIO_PERIPHERAL GPIOPinCode             :: GPIO ShortCut Name, GPIOXn, X is [A,F], x is [0,7] .
- *  uint8_t pinType                         :: INPUT or OUTPUT pin.
+ *  GPIO_PIN_IO_TYPE pinType                :: INPUT or OUTPUT pin.
  * Steps:
  *  Step 1: Enable peripheral of gpio (i.e., supply Clock) if not already supplied.
  *  Step 2: Enable gpio according to pin Type
@@ -22,11 +22,11 @@
  * Returns:
  *  GPIO *gpioPointer                       :: Pointer to GPIO struct now initialized.
  */
-GPIO* initGPIO(GPIO *gpioPointer,GPIO_PIN_CODE GPIOPinCode,uint8_t pinType)
+GPIO* initGPIO(GPIO *gpioPointer,GPIO_PIN_CODE GPIOPinCode,GPIO_PIN_IO_TYPE pinType)
 {
-    char GPIOPortLetter = getGPIOPortLetter(GPIOPinCode) ;
-    uint8_t pinNumber = getPinNumber(GPIOPinCode) ;
-    gpioPointer->GPIOBase           = getGPIOBaseAddress(GPIOPortLetter);
+    char GPIOPortLetter         = getGPIOPortLetter(GPIOPinCode) ;
+    uint8_t pinNumber           = getPinNumber(GPIOPinCode) ;
+    gpioPointer->GPIOBase       = getGPIOBaseAddress(GPIOPortLetter);
     gpioPointer->pinNumber      = pinNumber;
     gpioPointer->pin            = 1 << pinNumber;
     gpioPointer->pinType        = pinType;
@@ -90,7 +90,7 @@ GPIO* initGPIOI(GPIO * gpioPointer,uint32_t interruptType, uint32_t portInt,void
  * Returns:
  *  void.
  */
-void digitalWrite(GPIO *gpioPointer,uint8_t writePinState)
+void digitalWrite(GPIO *gpioPointer,GPIO_PIN_STATE writePinState)
 {
     GPIOPinWrite(gpioPointer->GPIOBase,gpioPointer->pin,gpioPointer->pin & writePinState);
 #ifndef USE_FAST_GPIO
@@ -159,65 +159,65 @@ static uint32_t getGPIOBaseAddress(char GPIOPortLetter)
 static uint8_t getPinNumber(GPIO_PIN_CODE GPIOPinCode)
 {
     switch (GPIOPinCode) {
-            case GPIOA0 :
-            case GPIOB0 :
-            case GPIOC0 :
-            case GPIOD0 :
-            case GPIOE0 :
-            case GPIOF0 :
-                return 0 ;
-            case GPIOA1 :
-            case GPIOB1 :
-            case GPIOC1 :
-            case GPIOD1 :
-            case GPIOE1 :
-            case GPIOF1 :
-                return 1 ;
-            case GPIOA2 :
-            case GPIOB2 :
-            case GPIOC2 :
-            case GPIOD2 :
-            case GPIOE2 :
-            case GPIOF2 :
-                return 2 ;
-            case GPIOA3 :
-            case GPIOB3 :
-            case GPIOC3 :
-            case GPIOD3 :
-            case GPIOE3 :
-            case GPIOF3 :
-                return 3 ;
-            case GPIOA4 :
-            case GPIOB4 :
-            case GPIOC4 :
-            case GPIOD4 :
-            case GPIOE4 :
-            case GPIOF4 :
-                return 4 ;
-            case GPIOA5 :
-            case GPIOB5 :
-            case GPIOC5 :
-            case GPIOD5 :
-            case GPIOE5 :
-            case GPIOF5 :
-                return 5 ;
-            case GPIOA6 :
-            case GPIOB6 :
-            case GPIOC6 :
-            case GPIOD6 :
-            case GPIOE6 :
-            case GPIOF6 :
-                return 6 ;
-            case GPIOA7 :
-            case GPIOB7 :
-            case GPIOC7 :
-            case GPIOD7 :
-            case GPIOE7 :
-            case GPIOF7 :
-                return 7 ;
+    case GPIOA0 :
+    case GPIOB0 :
+    case GPIOC0 :
+    case GPIOD0 :
+    case GPIOE0 :
+    case GPIOF0 :
+        return 0 ;
+    case GPIOA1 :
+    case GPIOB1 :
+    case GPIOC1 :
+    case GPIOD1 :
+    case GPIOE1 :
+    case GPIOF1 :
+        return 1 ;
+    case GPIOA2 :
+    case GPIOB2 :
+    case GPIOC2 :
+    case GPIOD2 :
+    case GPIOE2 :
+    case GPIOF2 :
+        return 2 ;
+    case GPIOA3 :
+    case GPIOB3 :
+    case GPIOC3 :
+    case GPIOD3 :
+    case GPIOE3 :
+    case GPIOF3 :
+        return 3 ;
+    case GPIOA4 :
+    case GPIOB4 :
+    case GPIOC4 :
+    case GPIOD4 :
+    case GPIOE4 :
+    case GPIOF4 :
+        return 4 ;
+    case GPIOA5 :
+    case GPIOB5 :
+    case GPIOC5 :
+    case GPIOD5 :
+    case GPIOE5 :
+    case GPIOF5 :
+        return 5 ;
+    case GPIOA6 :
+    case GPIOB6 :
+    case GPIOC6 :
+    case GPIOD6 :
+    case GPIOE6 :
+    case GPIOF6 :
+        return 6 ;
+    case GPIOA7 :
+    case GPIOB7 :
+    case GPIOC7 :
+    case GPIOD7 :
+    case GPIOE7 :
+    case GPIOF7 :
+        return 7 ;
 
-            default:
-                break;
+    default:
+        break;
     }
     return 100 ;
 
@@ -226,63 +226,63 @@ static uint8_t getPinNumber(GPIO_PIN_CODE GPIOPinCode)
 static char getGPIOPortLetter(GPIO_PIN_CODE GPIOPinCode)
 {
     switch (GPIOPinCode) {
-        case GPIOA0 :
-        case GPIOA1 :
-        case GPIOA2 :
-        case GPIOA3 :
-        case GPIOA4 :
-        case GPIOA5 :
-        case GPIOA6 :
-        case GPIOA7 :
-            return 'A' ;
-        case GPIOB0 :
-        case GPIOB1 :
-        case GPIOB2 :
-        case GPIOB3 :
-        case GPIOB4 :
-        case GPIOB5 :
-        case GPIOB6 :
-        case GPIOB7 :
-            return 'B' ;
-        case GPIOC0 :
-        case GPIOC1 :
-        case GPIOC2 :
-        case GPIOC3 :
-        case GPIOC4 :
-        case GPIOC5 :
-        case GPIOC6 :
-        case GPIOC7 :
-            return 'C' ;
-        case GPIOD0 :
-        case GPIOD1 :
-        case GPIOD2 :
-        case GPIOD3 :
-        case GPIOD4 :
-        case GPIOD5 :
-        case GPIOD6 :
-        case GPIOD7 :
-            return 'D' ;
-        case GPIOE0 :
-        case GPIOE1 :
-        case GPIOE2 :
-        case GPIOE3 :
-        case GPIOE4 :
-        case GPIOE5 :
-        case GPIOE6 :
-        case GPIOE7 :
-            return 'E' ;
-        case GPIOF0 :
-        case GPIOF1 :
-        case GPIOF2 :
-        case GPIOF3 :
-        case GPIOF4 :
-        case GPIOF5 :
-        case GPIOF6 :
-        case GPIOF7 :
-            return 'F' ;
+    case GPIOA0 :
+    case GPIOA1 :
+    case GPIOA2 :
+    case GPIOA3 :
+    case GPIOA4 :
+    case GPIOA5 :
+    case GPIOA6 :
+    case GPIOA7 :
+        return 'A' ;
+    case GPIOB0 :
+    case GPIOB1 :
+    case GPIOB2 :
+    case GPIOB3 :
+    case GPIOB4 :
+    case GPIOB5 :
+    case GPIOB6 :
+    case GPIOB7 :
+        return 'B' ;
+    case GPIOC0 :
+    case GPIOC1 :
+    case GPIOC2 :
+    case GPIOC3 :
+    case GPIOC4 :
+    case GPIOC5 :
+    case GPIOC6 :
+    case GPIOC7 :
+        return 'C' ;
+    case GPIOD0 :
+    case GPIOD1 :
+    case GPIOD2 :
+    case GPIOD3 :
+    case GPIOD4 :
+    case GPIOD5 :
+    case GPIOD6 :
+    case GPIOD7 :
+        return 'D' ;
+    case GPIOE0 :
+    case GPIOE1 :
+    case GPIOE2 :
+    case GPIOE3 :
+    case GPIOE4 :
+    case GPIOE5 :
+    case GPIOE6 :
+    case GPIOE7 :
+        return 'E' ;
+    case GPIOF0 :
+    case GPIOF1 :
+    case GPIOF2 :
+    case GPIOF3 :
+    case GPIOF4 :
+    case GPIOF5 :
+    case GPIOF6 :
+    case GPIOF7 :
+        return 'F' ;
 
-        default:
-            break;
+    default:
+        break;
     }
     return 100 ;
 }

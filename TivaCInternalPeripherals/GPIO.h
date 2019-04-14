@@ -18,14 +18,24 @@
 /*
  * Macro Definitions:
  */
-#define INPUT 1                                 // Pin type is set as INPUT.
-#define OUTPUT 2                                // Pin type is set as OUTPUT.
-#define HIGH 255                                // If Pin type is Output, setting Pin to HIGH, puts 3.3V on the pin.
-#define LOW 0                                   // If Pin type is Output, setting Pin to LOW, puts 0V on the pin.
+//#define INPUT 1                                 // Pin type is set as INPUT.
+//#define OUTPUT 2                                // Pin type is set as OUTPUT.
+//#define HIGH 255                                // If Pin type is Output, setting Pin to HIGH, puts 3.3V on the pin.
+//#define LOW 0                                   // If Pin type is Output, setting Pin to LOW, puts 0V on the pin.
 #define GPIO_STRENGTH GPIO_STRENGTH_2MA         // Decides gpio strength.
 #define GPIO_PIN_TYPE GPIO_PIN_TYPE_STD_WPU     // Decides pull-up type.
 #define USE_FAST_GPIO                           // Attempt faster code by not updating pin state.
 // /End Macro Definitions.
+
+typedef enum GPIO_PIN_IO_TYPE {
+    INPUT = false ,
+    OUTPUT = true
+}GPIO_PIN_IO_TYPE;
+
+typedef enum GPIO_PIN_STATE {
+    HIGH = 255 ,
+    LOW  = 0
+}GPIO_PIN_STATE;
 
 /*
  * GPIO: Struct Definition:
@@ -37,7 +47,7 @@
  * base:        Port Base Address of the Pin.
 */
 typedef struct GPIO{
-    uint8_t pinType;                            // Input or Output Pin.
+    GPIO_PIN_IO_TYPE pinType;                   // Input or Output Pin.
     uint8_t pin;                                // Pin value, GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, or GPIO_PIN_7.
     uint8_t pinNumber;                          // Pin Number according to Port, based on this, (uint8_t pin) value is decided.
                                                 // This is Done in the following way:
@@ -77,7 +87,7 @@ typedef struct GPIO{
  */
 GPIO* initGPIO(GPIO *gpioPointer,
                GPIO_PIN_CODE GPIOPinCode,
-               uint8_t pinType) ;
+               GPIO_PIN_IO_TYPE pinType) ;
 
 
 /*
