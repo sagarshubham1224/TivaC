@@ -96,7 +96,6 @@ GPIO* initGPIO(GPIO *gpioPointer,
  * Arguments:
  *  GPIO* gpioPointer                               :: pointer to GPIO pin Set as input.
  *  uint32_t interruptType                          :: type of interrupt to be set.
- *  uint32_t portInt                                :: the interrupt of the particular port. Eg. INT_GPIOF
  *  void (*intHandlerFunction)(void)                :: Pointer to Interrupt Handler.
  * Steps:
  *  Step 1: Clear all interrupts on this base.
@@ -108,7 +107,7 @@ GPIO* initGPIO(GPIO *gpioPointer,
  * Returns:
  *  GPIO* gpioPointer                               :: pointer to GPIO pin Set as input. *
  */
-extern GPIO* initGPIOI(GPIO * gpioPointer,uint32_t interruptType, uint32_t portInt,void (*intHandlerFunction)(void));
+extern GPIO* initGPIOI(GPIO * gpioPointer,uint32_t interruptType,void (*intHandlerFunction)(void));
 
 /*
  * Write HIGH or LOW Value on OUTPUT Set gpio pin.
@@ -173,12 +172,22 @@ static uint32_t getGPIOBaseAddress(char GPIOPortLetter);
 static uint8_t getPinNumber(GPIO_PIN_CODE GPIOPinCode) ;
 
 /*
- * Function to get GPIO Port Letter depending upin GPIO_PIN_CODE
+ * Function to get GPIO Port Letter depending upon GPIO_PIN_CODE
  * Arguments:
  *  GPIO_PIN_CODE GPIOPinCode                   :: GPIO_PIN_CODE enum value.
  * Returns:
  *  char GPIOPortLetter                         :: Port Letter value.
  */
 static char getGPIOPortLetter(GPIO_PIN_CODE GPIOPinCode) ;
+
+
+/*
+ * Function to get GPIO Port Interrput depending upon GPIO_PIN_CODE
+ * Arguments:
+ *  uint32_t GPIOBaseAddress                    :: Base Address of GPIO peripheral
+ * Returns:
+ *  uint32_t Interrupt_GPIO                     :: GPIO interrupt value.
+ */
+static char getGPIOInterrupt(uint32_t GPIOBaseAddress) ;
 
 #endif

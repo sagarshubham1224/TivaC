@@ -56,7 +56,6 @@ GPIO* initGPIO(GPIO *gpioPointer,GPIO_PIN_CODE GPIOPinCode,GPIO_PIN_IO_TYPE pinT
  * Arguments:
  *  GPIO* gpioPointer                               :: pointer to GPIO pin Set as input.
  *  uint32_t interruptType                          :: type of interrupt to be set.
- *  uint32_t portInt                                :: the interrupt of the particular port. Eg. INT_GPIOF
  *  void (*intHandlerFunction)(void)                :: Pointer to Interrupt Handler.
  * Steps:
  *  Step 1: Clear all interrupts on this base.
@@ -68,13 +67,13 @@ GPIO* initGPIO(GPIO *gpioPointer,GPIO_PIN_CODE GPIOPinCode,GPIO_PIN_IO_TYPE pinT
  * Returns:
  *  GPIO* gpioPointer                               :: pointer to GPIO pin Set as input. *
  */
-GPIO* initGPIOI(GPIO * gpioPointer,uint32_t interruptType, uint32_t portInt,void (*intHandlerFunction)(void))
+GPIO* initGPIOI(GPIO * gpioPointer,uint32_t interruptType, void (*intHandlerFunction)(void))
 {
     GPIOIntClear(gpioPointer->GPIOBase, gpioPointer->pin);                                  // Clear any existing interrupts
     GPIOIntRegister(gpioPointer->GPIOBase, intHandlerFunction);                             // Register Interrupt for gpio->base with ISR intHandlerFunction.
     GPIOIntTypeSet(gpioPointer->GPIOBase, gpioPointer->pin, interruptType);                 // Setting Interrupt to trigger based on interruptType
     GPIOIntEnable(gpioPointer->GPIOBase, gpioPointer->pin);                                 // Enable the GPIO Interrupts on Port F
-    IntEnable(portInt);                                                                 // Enable Interrupts on Port F
+    IntEnable(getGPIOInterrupt(gpioPointer->GPIOBase));                                                                 // Enable Interrupts on Port F
     IntMasterEnable();                                                                  // Enable Global interrupts
     return gpioPointer;
 }
@@ -286,3 +285,38 @@ static char getGPIOPortLetter(GPIO_PIN_CODE GPIOPinCode)
     }
     return 100 ;
 }
+
+/*
+ * Function to get GPIO Port Interrput depending upon GPIO_PIN_CODE
+ * Arguments:
+ *  uint32_t GPIOBaseAddress                    :: Base Address of GPIO peripheral
+ * Returns:
+ *  uint32_t Interrupt_GPIO                     :: GPIO interrupt value.
+ */
+static char getGPIOInterrupt(uint32_t GPIOBaseAddress)
+{
+    switch(GPIOBaseAddress)
+    {
+    case GPIO_PORTA_BASE :
+        return INT_GPIOA ;
+
+    case GPIO_PORTB_BASE :
+        return INT_GPIOB ;
+
+    case GPIO_PORTC_BASE :
+        return INT_GPIOC ;
+
+    case GPIO_PORTD_BASE :
+        return INT_GPIOD ;
+
+    case GPIO_PORTE_BASE :
+        return INT_GPIOE ;
+
+    case GPIO_PORTF_BASE :
+        return INT_GPIOF ;
+
+    default:
+        return 100;
+    }
+}
+
