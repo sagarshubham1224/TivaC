@@ -185,4 +185,10 @@ static void UARTvaListWrite(UARTDEVICE* UARTDevicePointer, const char *printStri
 
 static uint8_t getUARTNumber(UART_PERIPHERAL UARTPeripheralCode) ;
 
+
+static uint32_t getUARTGPIOPeripheralAddress(UART_PERIPHERAL UARTPeripheralCode) ;
+
+
+static uint32_t getUARTGPIOBaseAddress(UART_PERIPHERAL UARTPeripheralCode) ;
+
 #endif

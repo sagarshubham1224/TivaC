@@ -58,14 +58,14 @@ extern UARTDEVICE* initUART(UARTDEVICE* UARTDevicePointer, UART_PERIPHERAL UARTP
     uint8_t ui32UARTNumber = getUARTNumber(UARTPeripheralCode) ;
     UARTDevicePointer->ui32Base = ui32UARTBaseAddressArray[ui32UARTNumber];
 
-    SysCtlPeripheralEnable(ui32GPIOPeripheralAddressArray[ui32UARTNumber]);
+    SysCtlPeripheralEnable(getUARTGPIOPeripheralAddress(UARTPeripheralCode));
 
     SysCtlPeripheralEnable(ui32UARTPeripheralAddressArray[ui32UARTNumber]);
 
     GPIOPinConfigure(ui32UARTPinsAltAddressArray[ui32UARTNumber][0]);
     GPIOPinConfigure(ui32UARTPinsAltAddressArray[ui32UARTNumber][1]);
 
-    GPIOPinTypeUART(ui32GPIOBaseAddressArray[ui32UARTNumber],
+    GPIOPinTypeUART(getUARTGPIOBaseAddress(UARTPeripheralCode),
                     ui32UARTPinsAddressArray[ui32UARTNumber]);
 
     UARTConfigSetExpClk(ui32UARTBaseAddressArray[ui32UARTNumber],
@@ -715,3 +715,48 @@ static uint8_t getUARTNumber(UART_PERIPHERAL UARTPeripheralCode)
     }
     return 100 ;
 }
+
+static uint32_t getUARTGPIOPeripheralAddress(UART_PERIPHERAL UARTPeripheralCode)
+{
+    switch (UARTPeripheralCode) {
+        case UART0:
+            return ui32GPIOPeripheralAddressArray[0] ; // PORT A
+        case UART1:
+            return ui32GPIOPeripheralAddressArray[1] ; // PORT B
+        case UART2:
+        case UART6:
+            return ui32GPIOPeripheralAddressArray[3] ; // PORT D
+        case UART3:
+        case UART4:
+            return ui32GPIOPeripheralAddressArray[2] ; // PORT C
+        case UART5:
+        case UART7:
+            return ui32GPIOPeripheralAddressArray[4] ; // PORT E
+        default:
+            break ;
+    }
+    return 100 ;
+}
+static uint32_t getUARTGPIOBaseAddress(UART_PERIPHERAL UARTPeripheralCode)
+{
+    switch (UARTPeripheralCode) {
+        case UART0:
+            return ui32GPIOBaseAddressArray[0] ; // PORT A
+        case UART1:
+            return ui32GPIOBaseAddressArray[1] ; // PORT B
+        case UART2:
+        case UART6:
+            return ui32GPIOBaseAddressArray[3] ; // PORT D
+        case UART3:
+        case UART4:
+            return ui32GPIOBaseAddressArray[2] ; // PORT C
+        case UART5:
+        case UART7:
+            return ui32GPIOBaseAddressArray[4] ; // PORT E
+        default:
+            break ;
+    }
+    return 100 ;
+}
+
+
