@@ -23,6 +23,12 @@ typedef enum LINE_SENSOR_INTERRUPT_STATES {
     INT_FALLING = 2
 }LINE_SENSOR_INTERRUPT_STATES;
 
+typedef enum LINE_SENSOR_I2C_ADDRESSES {
+    LINE_SENSOR_I2C_ADDRESS_0x3E = 0x3E ,
+    LINE_SENSOR_I2C_ADDRESS_0x3F = 0x3F ,
+    LINE_SENSOR_I2C_ADDRESS_0x70 = 0x70 ,
+    LINE_SENSOR_I2C_ADDRESS_0x71 = 0x71 ,
+}LINE_SENSOR_I2C_ADDRESSES;
 typedef struct LINE_SENSOR_ARRAY_DEVICE {
     I2CDEVICE                   lineSensorI2CDevice ;
     int8_t                      lineSensorValue ;
@@ -38,9 +44,9 @@ typedef struct LINE_SENSOR_ARRAY_DEVICE {
 
 
 
-extern uint8_t initialize_lineSensorArrayDevice(LINE_SENSOR_ARRAY_DEVICE *lineSensorArrayDevicePointer,
+extern bool initialize_lineSensorArrayDevice(LINE_SENSOR_ARRAY_DEVICE *lineSensorArrayDevicePointer,
                                                 I2C_PERIPHERAL I2CPeripheralCode,
-                                                uint8_t I2CAddress) ;
+                                                LINE_SENSOR_I2C_ADDRESSES I2CAddress) ;
 
 extern void lineSensor_reset_sx1509(LINE_SENSOR_ARRAY_DEVICE *lineSensorArrayDevicePointer) ;
 

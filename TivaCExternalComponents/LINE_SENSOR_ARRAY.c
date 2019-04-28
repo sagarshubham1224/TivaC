@@ -16,11 +16,11 @@
                                          uint8_t registerAddress)
  */
 
-extern uint8_t initialize_lineSensorArrayDevice(LINE_SENSOR_ARRAY_DEVICE *lineSensorArrayDevicePointer,
+extern bool initialize_lineSensorArrayDevice(LINE_SENSOR_ARRAY_DEVICE *lineSensorArrayDevicePointer,
                                                 I2C_PERIPHERAL I2CPeripheralCode,
-                                                uint8_t I2CAddress)
+                                                LINE_SENSOR_I2C_ADDRESSES I2CAddress)
 {
-    uint8_t returnValue = 0 ;
+    bool successfulInitialization = false ;
     initI2CMaster(&lineSensorArrayDevicePointer->lineSensorI2CDevice, I2CPeripheralCode, I2CAddress, FAST_400k_I2C) ;
     lineSensor_reset_sx1509(lineSensorArrayDevicePointer) ;
     uint16_t testRegister = 0 ;
@@ -39,13 +39,13 @@ extern uint8_t initialize_lineSensorArrayDevice(LINE_SENSOR_ARRAY_DEVICE *lineSe
         lineSensorArrayDevicePointer->oscPinFunction = 0 ;
         lineSensorArrayDevicePointer->oscFreqOut = 0 ;
         lineSensorArrayDevicePointer->oscDivider = 1 ;
-        returnValue = 1 ;
+        successfulInitialization = true ;
     }
     else
     {
-        returnValue = 0;
+        successfulInitialization = false;
     }
-    return returnValue ;
+    return successfulInitialization ;
 }
 
 
