@@ -27,10 +27,15 @@
 //#define TIMING_FACTOR   4
 #define SYSTEM_TIMER_FREQUENCY        4000 //250 useconds. Good enough for most purposes.
 
+#define USE_SYSTICK_FOR_SYSTEM          // Comment this line and uncomment below line for using Timer 0 for system clock.
+
+//#define USE_TIMER0_FOR_SYSTEM        // Uncomment this line and comment above line for using Timer 0 for system clock.
 
 typedef struct TIMERDEVICE {
     uint32_t TIMERBase ;
+    TIMER_AB TimerHalfWidthPart ;
     uint16_t timerEventRepeatFrequency ;
+    uint32_t timerTimeOutFlag ;
     void (*timeEventFunction)(void) ;
 }TIMERDEVICE;
 
@@ -41,6 +46,9 @@ typedef struct TIMERDEVICE {
  */
 
 //public non-static extern Functions:
+
+
+extern void setTimerEnableDisable(TIMERDEVICE *TIMERDEVICEPointer, TIMER_EN_DIS timerState) ;
 
 /*
  * Function to initiate TIMER 0
@@ -65,6 +73,12 @@ extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
                                        TIMER_PERIPHERAL timerNumber,
                                        uint16_t timerEventRepeatFrequency,
                                        void (*timerEventFunction)(void)) ;
+
+extern void initTimerHalfWidthPeriodicInterrupt(TIMERDEVICE *TIMERDEVICEPointer,
+                                               TIMER_PERIPHERAL timerNumber,
+                                               TIMER_AB timerHalfWidthPart,
+                                               uint16_t timerEventRepeatFrequency,
+                                               void(*timerEventFunction)(void)) ;
 
 /*
  * Function to get number of milliseconds since last reboot.
@@ -135,4 +149,13 @@ static uint32_t getTimerPeripheralAddress(TIMER_PERIPHERAL timerNumber) ;
  *  TODO : implement similar function for wide timers.
  */
 static uint32_t getTimerBaseAddress(TIMER_PERIPHERAL timerNumber) ;
+
+static uint32_t getTimerHalfTimerPart(TIMER_AB timerHalfWidthPart) ;
+
+static uint32_t getTimerPart(TIMER_AB timerHalfWidthPart) ;
+
+
+static uint32_t getTimerHalfTimeoutPart(TIMER_AB timerHalfWidthPart) ;
+
+
 #endif

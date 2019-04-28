@@ -3,8 +3,9 @@
 
 volatile static uint64_t ticks = 0;
 
+#ifdef USE_TIMER0_FOR_SYSTEM
 static TIMERDEVICE systemTimer ;
-
+#endif
 
 
 
@@ -33,14 +34,58 @@ extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
     TIMERDEVICEPointer->TIMERBase = getTimerBaseAddress(timerNumber) ;
     TIMERDEVICEPointer->timeEventFunction = timerEventFunction ;
     TIMERDEVICEPointer->timerEventRepeatFrequency = timerEventRepeatFrequency ;
+    TIMERDEVICEPointer->TimerHalfWidthPart = TIMER_FULL ;
+    TIMERDEVICEPointer->timerTimeOutFlag = getTimerHalfTimeoutPart(TIMER_FULL) ;
     TimerConfigure(TIMERDEVICEPointer->TIMERBase, TIMER_CFG_PERIODIC) ;
     TimerLoadSet(TIMERDEVICEPointer->TIMERBase, TIMER_A, SysCtlClockGet()/timerEventRepeatFrequency-1) ;
     TimerIntRegister(TIMERDEVICEPointer->TIMERBase, TIMER_A, timerEventFunction) ;
     TimerIntEnable(TIMERDEVICEPointer->TIMERBase, TIMER_TIMA_TIMEOUT) ;
-    TimerEnable(TIMERDEVICEPointer->TIMERBase, TIMER_A) ;
-
 }
 
+extern void initTimerHalfWidthPeriodicInterrupt(TIMERDEVICE *TIMERDEVICEPointer,
+                                                TIMER_PERIPHERAL timerNumber,
+                                                TIMER_AB timerHalfWidthPart,
+                                                uint16_t timerEventRepeatFrequency,
+                                                void(*timerEventFunction)(void))
+{
+    if(timerHalfWidthPart == TIMER_FULL)
+    {
+        initTimerFullWidthPeriodic(TIMERDEVICEPointer, timerNumber, timerEventRepeatFrequency, timerEventFunction) ;
+        return ;
+    }
+    if(!SysCtlPeripheralReady(getTimerPeripheralAddress(timerNumber)))
+    {
+        SysCtlPeripheralEnable(getTimerPeripheralAddress(timerNumber)) ;
+        while(!SysCtlPeripheralReady(getTimerPeripheralAddress(timerNumber))) ;
+    }
+    TIMERDEVICEPointer->TIMERBase = getTimerBaseAddress(timerNumber) ;
+    TIMERDEVICEPointer->timeEventFunction = timerEventFunction ;
+    TIMERDEVICEPointer->timerEventRepeatFrequency = timerEventRepeatFrequency ;
+    TIMERDEVICEPointer->TimerHalfWidthPart = timerHalfWidthPart ;
+    TIMERDEVICEPointer->timerTimeOutFlag = getTimerHalfTimeoutPart(timerHalfWidthPart) ;
+    uint32_t loadValue = SysCtlClockGet()/timerEventRepeatFrequency - 1 ;
+    TimerConfigure(TIMERDEVICEPointer->TIMERBase, TIMER_CFG_SPLIT_PAIR | getTimerHalfTimerPart(timerHalfWidthPart)) ;
+    TimerLoadSet(TIMERDEVICEPointer->TIMERBase, getTimerPart(timerHalfWidthPart),loadValue)  ;
+    TimerIntRegister(TIMERDEVICEPointer->TIMERBase, getTimerPart(timerHalfWidthPart), timerEventFunction) ;
+    TimerIntEnable(TIMERDEVICEPointer->TIMERBase, TIMERDEVICEPointer->timerTimeOutFlag) ;
+}
+
+extern void setTimerEnableDisable(TIMERDEVICE *TIMERDEVICEPointer, TIMER_EN_DIS timerState)
+{
+    uint32_t timerPart = TIMERDEVICEPointer->TimerHalfWidthPart ;
+    if(timerPart == TIMER_FULL)
+    {
+        timerPart = TIMER_HALF_A ;
+    }
+    if(timerState == TIMER_ENABLE)
+    {
+        TimerEnable(TIMERDEVICEPointer->TIMERBase, timerPart) ;
+    }
+    else if (timerState == TIMER_DISABLE)
+    {
+        TimerDisable(TIMERDEVICEPointer->TIMERBase, timerPart) ;
+    }
+}
 /*
  * Function to initiate TIMER 0
  * Arguments:
@@ -50,7 +95,17 @@ extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
  */
 extern void initSystemTimer(void)
 {
+#ifdef USE_TIMER0_FOR_SYSTEM
     initTimerFullWidthPeriodic(&systemTimer, TIMER0, SYSTEM_TIMER_FREQUENCY, systemTimerInterruptHandler) ;
+    setTimerEnableDisable(&systemTimer, TIMER_ENABLE) ;
+#endif
+#ifdef USE_SYSTICK_FOR_SYSTEM
+    uint32_t systemPeriod = SysCtlClockGet()/SYSTEM_TIMER_FREQUENCY  ;
+    SysTickPeriodSet(systemPeriod);
+    SysTickIntRegister(systemTimerInterruptHandler) ;
+    SysTickIntEnable() ;
+    SysTickEnable() ;
+#endif
 }
 /*
  * Function to get number of milliseconds since last reboot.
@@ -116,8 +171,10 @@ extern void systemTicksDelay(uint64_t delayTimeInTicks)
  */
 static void systemTimerInterruptHandler(void)
 {
+#ifdef USE_TIMER0_FOR_SYSTEM
     uint32_t status = TimerIntStatus(systemTimer.TIMERBase,true);
     TimerIntClear(systemTimer.TIMERBase,status);
+#endif
     ticks++;
 }
 
@@ -145,4 +202,37 @@ static uint32_t getTimerPeripheralAddress(TIMER_PERIPHERAL timerNumber)
 static uint32_t getTimerBaseAddress(TIMER_PERIPHERAL timerNumber)
 {
     return ui32TIMERBaseAddressArray[(uint8_t)(timerNumber)] ;
+}
+
+static uint32_t getTimerHalfTimerPart(TIMER_AB timerHalfWidthPart)
+{
+    switch(timerHalfWidthPart)
+    {
+    case TIMER_HALF_A :
+        return TIMER_CFG_A_PERIODIC ;
+    case TIMER_HALF_B :
+        return TIMER_CFG_B_PERIODIC ;
+    }
+    return 100 ;
+}
+
+static uint32_t getTimerPart(TIMER_AB timerHalfWidthPart)
+{
+   if(timerHalfWidthPart == TIMER_HALF_A || timerHalfWidthPart == TIMER_HALF_B)
+       return timerHalfWidthPart ;
+   else
+       return 100 ;
+}
+
+static uint32_t getTimerHalfTimeoutPart(TIMER_AB timerHalfWidthPart)
+{
+    switch(timerHalfWidthPart)
+    {
+    case TIMER_HALF_A :
+    case TIMER_FULL :
+        return TIMER_TIMA_TIMEOUT ;
+    case TIMER_HALF_B :
+        return TIMER_TIMB_TIMEOUT ;
+    }
+    return 100 ;
 }
