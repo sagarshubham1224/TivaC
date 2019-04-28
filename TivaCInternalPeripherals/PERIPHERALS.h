@@ -11,7 +11,9 @@
 #ifdef PART_TM4C123GH6PM
 #include "driverlib/sysctl.h"
 #include "driverlib/pin_map.h"
+#include "driverlib/timer.h"
 #include "driverlib/adc.h"
+#include "driverlib/systick.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
 /*
@@ -239,6 +241,17 @@ typedef enum TIMER_PERIPHERAL {
     TIMER4 = 4,
     TIMER5 = 5
 }TIMER_PERIPHERAL;
+
+typedef enum TIMER_AB {
+    TIMER_HALF_A     = TIMER_A,
+    TIMER_HALF_B     = TIMER_B,
+    TIMER_FULL       = TIMER_BOTH
+}TIMER_AB;
+
+typedef enum TIMER_EN_DIS {
+    TIMER_ENABLE = true ,
+    TIMER_DISABLE = false
+}TIMER_EN_DIS;
 
 /*
  * Enum for using different timers in 32 bit operation
