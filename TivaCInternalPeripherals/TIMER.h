@@ -35,7 +35,6 @@ typedef struct TIMERDEVICE {
     uint32_t TIMERBase ;
     TIMER_AB TimerHalfWidthPart ;
     uint16_t timerEventRepeatFrequency ;
-    uint32_t timerTimeOutFlag ;
     void (*timeEventFunction)(void) ;
 }TIMERDEVICE;
 
@@ -51,7 +50,7 @@ typedef struct TIMERDEVICE {
 extern void setTimerEnableDisable(TIMERDEVICE *TIMERDEVICEPointer, TIMER_EN_DIS timerState) ;
 
 /*
- * Function to initiate TIMER 0
+ * Function to initiate System Timer
  * Arguments:
  *  none.
  * Returns:
@@ -150,12 +149,8 @@ static uint32_t getTimerPeripheralAddress(TIMER_PERIPHERAL timerNumber) ;
  */
 static uint32_t getTimerBaseAddress(TIMER_PERIPHERAL timerNumber) ;
 
-static uint32_t getTimerHalfTimerPart(TIMER_AB timerHalfWidthPart) ;
-
-static uint32_t getTimerPart(TIMER_AB timerHalfWidthPart) ;
 
 
 static uint32_t getTimerHalfTimeoutPart(TIMER_AB timerHalfWidthPart) ;
-
 
 #endif

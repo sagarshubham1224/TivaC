@@ -35,7 +35,6 @@ extern void initTimerFullWidthPeriodic(TIMERDEVICE *TIMERDEVICEPointer ,
     TIMERDEVICEPointer->timeEventFunction = timerEventFunction ;
     TIMERDEVICEPointer->timerEventRepeatFrequency = timerEventRepeatFrequency ;
     TIMERDEVICEPointer->TimerHalfWidthPart = TIMER_FULL ;
-    TIMERDEVICEPointer->timerTimeOutFlag = getTimerHalfTimeoutPart(TIMER_FULL) ;
     TimerConfigure(TIMERDEVICEPointer->TIMERBase, TIMER_CFG_PERIODIC) ;
     TimerLoadSet(TIMERDEVICEPointer->TIMERBase, TIMER_A, SysCtlClockGet()/timerEventRepeatFrequency-1) ;
     TimerIntRegister(TIMERDEVICEPointer->TIMERBase, TIMER_A, timerEventFunction) ;
@@ -62,12 +61,13 @@ extern void initTimerHalfWidthPeriodicInterrupt(TIMERDEVICE *TIMERDEVICEPointer,
     TIMERDEVICEPointer->timeEventFunction = timerEventFunction ;
     TIMERDEVICEPointer->timerEventRepeatFrequency = timerEventRepeatFrequency ;
     TIMERDEVICEPointer->TimerHalfWidthPart = timerHalfWidthPart ;
-    TIMERDEVICEPointer->timerTimeOutFlag = getTimerHalfTimeoutPart(timerHalfWidthPart) ;
-    uint32_t loadValue = SysCtlClockGet()/timerEventRepeatFrequency - 1 ;
-    TimerConfigure(TIMERDEVICEPointer->TIMERBase, TIMER_CFG_SPLIT_PAIR | getTimerHalfTimerPart(timerHalfWidthPart)) ;
-    TimerLoadSet(TIMERDEVICEPointer->TIMERBase, getTimerPart(timerHalfWidthPart),loadValue)  ;
-    TimerIntRegister(TIMERDEVICEPointer->TIMERBase, getTimerPart(timerHalfWidthPart), timerEventFunction) ;
-    TimerIntEnable(TIMERDEVICEPointer->TIMERBase, TIMERDEVICEPointer->timerTimeOutFlag) ;
+    uint32_t loadValue = SysCtlClockGet()/256/timerEventRepeatFrequency - 1 ;
+
+    TimerConfigure(TIMERDEVICEPointer->TIMERBase, TIMER_CFG_SPLIT_PAIR | TIMER_CFG_A_PERIODIC | TIMER_CFG_B_PERIODIC ) ;
+    TimerPrescaleSet(TIMERDEVICEPointer->TIMERBase, TIMERDEVICEPointer->TimerHalfWidthPart, 0xFF) ;
+    TimerLoadSet(TIMERDEVICEPointer->TIMERBase, TIMERDEVICEPointer->TimerHalfWidthPart,loadValue)  ;
+    TimerIntRegister(TIMERDEVICEPointer->TIMERBase, TIMERDEVICEPointer->TimerHalfWidthPart, timerEventFunction) ;
+    TimerIntEnable(TIMERDEVICEPointer->TIMERBase, getTimerHalfTimeoutPart(timerHalfWidthPart)) ;
 }
 
 extern void setTimerEnableDisable(TIMERDEVICE *TIMERDEVICEPointer, TIMER_EN_DIS timerState)
@@ -87,7 +87,7 @@ extern void setTimerEnableDisable(TIMERDEVICE *TIMERDEVICEPointer, TIMER_EN_DIS 
     }
 }
 /*
- * Function to initiate TIMER 0
+ * Function to initiate System Timer
  * Arguments:
  *  none.
  * Returns:
@@ -202,26 +202,6 @@ static uint32_t getTimerPeripheralAddress(TIMER_PERIPHERAL timerNumber)
 static uint32_t getTimerBaseAddress(TIMER_PERIPHERAL timerNumber)
 {
     return ui32TIMERBaseAddressArray[(uint8_t)(timerNumber)] ;
-}
-
-static uint32_t getTimerHalfTimerPart(TIMER_AB timerHalfWidthPart)
-{
-    switch(timerHalfWidthPart)
-    {
-    case TIMER_HALF_A :
-        return TIMER_CFG_A_PERIODIC ;
-    case TIMER_HALF_B :
-        return TIMER_CFG_B_PERIODIC ;
-    }
-    return 100 ;
-}
-
-static uint32_t getTimerPart(TIMER_AB timerHalfWidthPart)
-{
-   if(timerHalfWidthPart == TIMER_HALF_A || timerHalfWidthPart == TIMER_HALF_B)
-       return timerHalfWidthPart ;
-   else
-       return 100 ;
 }
 
 static uint32_t getTimerHalfTimeoutPart(TIMER_AB timerHalfWidthPart)
