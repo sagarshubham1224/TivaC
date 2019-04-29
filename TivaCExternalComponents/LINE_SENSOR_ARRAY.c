@@ -251,7 +251,6 @@ static void lineSensor_scan(LINE_SENSOR_ARRAY_DEVICE *lineSensorArrayDevicePoint
     if(lineSensorArrayDevicePointer->barStrobe == LINE_BAR_ON_ONLY_WHEN_READ)
     {
         lineSensor_writeSingleByte(lineSensorArrayDevicePointer, REG_DATA_B, 0x02) ;
-        milliSecondDelay(2) ;
         lineSensor_writeSingleByte(lineSensorArrayDevicePointer, REG_DATA_B, 0x00) ;
     }
     else
