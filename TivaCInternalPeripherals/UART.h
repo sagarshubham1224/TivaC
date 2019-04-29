@@ -45,12 +45,17 @@
 #define BINARY_SIZE_02                  2
 #define BINARY_SIZE_01                  1
 
+typedef enum UART_INTERRUPT_STATE_ENABLE_DISABLE {
+    UART_INTERRUPT_ENABLE   = 1,
+    UART_INTERRUPT_DISABLE  = 0,
+    UART_NO_INTERRUPT       = 2
+}UART_INTERRUPT_STATE_ENABLE_DISABLE;
+
 typedef struct UARTDEVICE{
     uint32_t    ui32Base;
-    char*       charBuffer;
-    uint8_t     ui8MaxStringLen;
-    uint8_t     charPos;
-    bool        isBufferFull;
+    uint32_t    interruptType ;
+    UART_INTERRUPT_STATE_ENABLE_DISABLE currentInterruptState ;
+    void (*UARTReceiveInterruptHandler)(void) ;
 }UARTDEVICE;
 
 
@@ -70,6 +75,16 @@ typedef struct UARTDEVICE{
  *  UARTDEVICE* UARTDevicePointer               :: Pointer to struct of UARTDEVICE.
  */
 extern UARTDEVICE* initUART(UARTDEVICE *UARTDevicePointer,  UART_PERIPHERAL UARTPeripheralCode,uint32_t ui32Baud,void(*pfnHandler)(void));
+
+/*
+ * Function to enable or disable UART Interrupt.
+ * Arguments:
+ *  UARTDEVICE *UARTDevicePointer                       :: Pointer to struct of UARTDEVICE.
+ *  UART_INTERRUPT_STATE_ENABLE_DISABLE interruptState  :: Interrupt State to be Set.
+ * Returns:
+ *  none.
+ */
+extern void UARTSetInterruptState(UARTDEVICE *UARTDevicePointer, UART_INTERRUPT_STATE_ENABLE_DISABLE interruptState) ;
 
 /*
  * Function to read a single Character from UART and return it.

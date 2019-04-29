@@ -57,6 +57,8 @@ extern UARTDEVICE* initUART(UARTDEVICE* UARTDevicePointer, UART_PERIPHERAL UARTP
 {
     uint8_t ui32UARTNumber = getUARTNumber(UARTPeripheralCode) ;
     UARTDevicePointer->ui32Base = ui32UARTBaseAddressArray[ui32UARTNumber];
+    UARTDevicePointer->interruptType = UART_SIMPLE_RX_INTERRUPT ;
+    UARTDevicePointer->UARTReceiveInterruptHandler =pfnHandler ;
 
     SysCtlPeripheralEnable(getUARTGPIOPeripheralAddress(UARTPeripheralCode));
 
@@ -78,14 +80,41 @@ extern UARTDEVICE* initUART(UARTDEVICE* UARTDevicePointer, UART_PERIPHERAL UARTP
     if(pfnHandler){
         UARTIntRegister(ui32UARTBaseAddressArray[ui32UARTNumber], pfnHandler);
         IntEnable(ui32UARTInterruptsAddressArray[ui32UARTNumber]);
-        UARTIntEnable(ui32UARTBaseAddressArray[ui32UARTNumber], UART_SIMPLE_RX_INTERRUPT);
+        UARTSetInterruptState(UARTDevicePointer, UART_INTERRUPT_ENABLE) ;
         IntMasterEnable();
+    }
+    else
+    {
+        UARTDevicePointer->currentInterruptState = UART_NO_INTERRUPT ;
     }
 
     return UARTDevicePointer;
 }
 
-
+/*
+ * Function to enable or disable UART Interrupt.
+ * Arguments:
+ *  UARTDEVICE *UARTDevicePointer                       :: Pointer to struct of UARTDEVICE.
+ *  UART_INTERRUPT_STATE_ENABLE_DISABLE interruptState  :: Interrupt State to be Set.
+ * Returns:
+ *  none.
+ */
+extern void UARTSetInterruptState(UARTDEVICE *UARTDevicePointer, UART_INTERRUPT_STATE_ENABLE_DISABLE interruptState)
+{
+    if(UARTDevicePointer->currentInterruptState == UART_NO_INTERRUPT)
+        return ;
+    else if(interruptState == UART_INTERRUPT_ENABLE)
+    {
+        UARTDevicePointer->currentInterruptState = interruptState ;
+        UARTFlushReceiver(UARTDevicePointer) ;
+        UARTIntEnable(UARTDevicePointer->ui32Base, UARTDevicePointer->interruptType) ;
+    }
+    else if( interruptState == UART_INTERRUPT_DISABLE)
+    {
+        UARTDevicePointer->currentInterruptState = interruptState ;
+        UARTIntDisable(UARTDevicePointer->ui32Base, UARTDevicePointer->interruptType) ;
+    }
+}
 
 /*
  * Function to read a single Character from UART Receiver and return it.
@@ -719,42 +748,42 @@ static uint8_t getUARTNumber(UART_PERIPHERAL UARTPeripheralCode)
 static uint32_t getUARTGPIOPeripheralAddress(UART_PERIPHERAL UARTPeripheralCode)
 {
     switch (UARTPeripheralCode) {
-        case UART0:
-            return ui32GPIOPeripheralAddressArray[0] ; // PORT A
-        case UART1:
-            return ui32GPIOPeripheralAddressArray[1] ; // PORT B
-        case UART2:
-        case UART6:
-            return ui32GPIOPeripheralAddressArray[3] ; // PORT D
-        case UART3:
-        case UART4:
-            return ui32GPIOPeripheralAddressArray[2] ; // PORT C
-        case UART5:
-        case UART7:
-            return ui32GPIOPeripheralAddressArray[4] ; // PORT E
-        default:
-            break ;
+    case UART0:
+        return ui32GPIOPeripheralAddressArray[0] ; // PORT A
+    case UART1:
+        return ui32GPIOPeripheralAddressArray[1] ; // PORT B
+    case UART2:
+    case UART6:
+        return ui32GPIOPeripheralAddressArray[3] ; // PORT D
+    case UART3:
+    case UART4:
+        return ui32GPIOPeripheralAddressArray[2] ; // PORT C
+    case UART5:
+    case UART7:
+        return ui32GPIOPeripheralAddressArray[4] ; // PORT E
+    default:
+        break ;
     }
     return 100 ;
 }
 static uint32_t getUARTGPIOBaseAddress(UART_PERIPHERAL UARTPeripheralCode)
 {
     switch (UARTPeripheralCode) {
-        case UART0:
-            return ui32GPIOBaseAddressArray[0] ; // PORT A
-        case UART1:
-            return ui32GPIOBaseAddressArray[1] ; // PORT B
-        case UART2:
-        case UART6:
-            return ui32GPIOBaseAddressArray[3] ; // PORT D
-        case UART3:
-        case UART4:
-            return ui32GPIOBaseAddressArray[2] ; // PORT C
-        case UART5:
-        case UART7:
-            return ui32GPIOBaseAddressArray[4] ; // PORT E
-        default:
-            break ;
+    case UART0:
+        return ui32GPIOBaseAddressArray[0] ; // PORT A
+    case UART1:
+        return ui32GPIOBaseAddressArray[1] ; // PORT B
+    case UART2:
+    case UART6:
+        return ui32GPIOBaseAddressArray[3] ; // PORT D
+    case UART3:
+    case UART4:
+        return ui32GPIOBaseAddressArray[2] ; // PORT C
+    case UART5:
+    case UART7:
+        return ui32GPIOBaseAddressArray[4] ; // PORT E
+    default:
+        break ;
     }
     return 100 ;
 }
