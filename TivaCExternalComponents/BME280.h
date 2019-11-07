@@ -1,0 +1,245 @@
+/*
+ * BME280.h
+ *
+ *  Created on: 16-Apr-2018
+ *      Author: sagar
+ */
+
+#ifndef BME280_H_
+#define BME280_H_
+
+#include "stdint.h"
+#include "stdbool.h"
+#include "ss_TIME.h"
+#include "ss_I2C.h"
+#include "ss_SSI.h"
+#include "ss_UART.h"
+#include "math.h"
+
+//#define BME280_USE_SSI
+#define BME280_USE_I2C
+
+
+#define BME280_SSI_MAX_FREQUENCY                            2000
+#define BME280_SSI_DATA_WIDTH                               8
+#define BME280_SSI_MODE
+#define BME280_SSI_WRITE_TO_REGISTER                        0x00
+#define BME280_SSI_READ_FROM_REGISTER                       0x80
+#define BME280_SSI_CPOL_CPHA_SETTINGS                       SSI_FRAME_FORMAT_CPOL0_CPHA0
+
+
+#define BME280_WHO_AM_I_REGISTER							0xD0
+#define BME280_WHO_AM_I_REGISTER_VALUE						0x60
+
+#define BME280_I2C_ADDRESS_SDO_LOW							0x76
+#define BME280_I2C_ADDRESS_SDO_HIGH							0x77
+
+#define BME280_RESET_REGISTER_ADDRESS						0xE0
+#define BME280_SOFT_RESET_VALUE								0xB6
+
+
+#define BME280_HUMIDITY_DATA_ACQ_CONTROL_REGISTER			0xF2
+#define BME280_STATUS_REGISTER								0xF3
+#define BME280_PRESSURE_TEMP_DATA_ACQ_CONTROL_REGISTER		0xF4
+#define BME280_CONFIG_REGISTER								0xF5
+
+#define BME280_OPERATION_MODE_SLEEP_MODE					0b00000000
+#define BME280_OPERATION_MODE_FORCED_MODE_1					0b00000001
+#define BME280_OPERATION_MODE_FORCED_MODE_2					0b00000010
+#define BME280_OPERATION_MODE_NORMAL_MODE					0b00000011
+
+
+#define BME280_STANDBY_TIME_0_5ms							0b00000000
+#define BME280_STANDBY_TIME_62_5ms							0b00100000
+#define BME280_STANDBY_TIME_125ms							0b01000000
+#define BME280_STANDBY_TIME_250ms							0b01100000
+#define BME280_STANDBY_TIME_500ms							0b10000000
+#define BME280_STANDBY_TIME_1000ms							0b10100000
+#define BME280_STANDBY_TIME_10ms							0b11000000
+#define BME280_STANDBY_TIME_20ms							0b11100000
+
+#define BME280_FILTER_COEFFICIENT_OFF						0b00000000
+#define BME280_FILTER_COEFFICIENT_2							0b00000100
+#define BME280_FILTER_COEFFICIENT_4							0b00001000
+#define BME280_FILTER_COEFFICIENT_8							0b00001100
+#define BME280_FILTER_COEFFICIENT_16						0b00010000
+
+#define BME280_ENABLE_3WIRE_SPI								0b00000001
+#define BME280_DISABLE_3WIRE_SPI							0b00000000
+
+
+#define BME280_HUMIDITY_OVERSAMPLING_SKIP					0b00000000
+#define BME280_HUMIDITY_OVERSAMPLING_x1						0b00000001
+#define BME280_HUMIDITY_OVERSAMPLING_x2						0b00000010
+#define BME280_HUMIDITY_OVERSAMPLING_x4						0b00000011
+#define BME280_HUMIDITY_OVERSAMPLING_x8						0b00000100
+#define BME280_HUMIDITY_OVERSAMPLING_x16					0b00000101
+
+#define BME280_PRESSURE_OVERSAMPLING_SKIP					0b00000000
+#define BME280_PRESSURE_OVERSAMPLING_x1						0b00000100
+#define BME280_PRESSURE_OVERSAMPLING_x2						0b00001000
+#define BME280_PRESSURE_OVERSAMPLING_x4						0b00001100
+#define BME280_PRESSURE_OVERSAMPLING_x8						0b00010000
+#define BME280_PRESSURE_OVERSAMPLING_x16					0b00010100
+
+
+#define BME280_TEMPERATURE_OVERSAMPLING_SKIP				0b00000000
+#define BME280_TEMPERATURE_OVERSAMPLING_x1					0b00100000
+#define BME280_TEMPERATURE_OVERSAMPLING_x2					0b01000000
+#define BME280_TEMPERATURE_OVERSAMPLING_x4					0b01100000
+#define BME280_TEMPERATURE_OVERSAMPLING_x8					0b10000000
+#define BME280_TEMPERATURE_OVERSAMPLING_x16					0b10100000
+
+#define BME280_PRESSURE_DATA_MSB							0xF7
+#define BME280_PRESSURE_DATA_LSB							0xF8
+#define BME280_PRESSURE_DATA_XLSB							0xF9
+#define BME280_TEMPERATURE_DATA_MSB							0xFA
+#define BME280_TEMPERATURE_DATA_LSB							0xFB
+#define BME280_TEMPERATURE_DATA_XLSB						0xFC
+#define BME280_HUMIDITY_DATA_MSB							0FD
+#define BME280_HUMIDITY_DATA_LSB							0FE
+
+#define BME280_P_MSB_POS									0
+#define BME280_P_LSB_POS									1
+#define BME280_P_XLSB_POS									2
+#define BME280_T_MSB_POS									3
+#define BME280_T_LSB_POS									4
+#define BME280_T_XLSB_POS									5
+#define BME280_H_MSB_POS									6
+#define BME280_H_LSB_POS									7
+
+
+
+#define BME280_COMPENSATION_PARAMETER_DIG_T1_LSB			0x88
+#define BME280_COMPENSATION_PARAMETER_DIG_T1_MSB			0x89
+#define BME280_COMPENSATION_PARAMETER_DIG_T2_LSB			0x8A
+#define BME280_COMPENSATION_PARAMETER_DIG_T2_MSB			0x8B
+#define BME280_COMPENSATION_PARAMETER_DIG_T3_LSB			0x8C
+#define BME280_COMPENSATION_PARAMETER_DIG_T3_MSB			0x8D
+#define BME280_COMPENSATION_PARAMETER_DIG_P1_LSB			0x8E
+#define BME280_COMPENSATION_PARAMETER_DIG_P1_MSB			0x8F
+#define BME280_COMPENSATION_PARAMETER_DIG_P2_LSB			0x90
+#define BME280_COMPENSATION_PARAMETER_DIG_P2_MSB			0x91
+#define BME280_COMPENSATION_PARAMETER_DIG_P3_LSB			0x92
+#define BME280_COMPENSATION_PARAMETER_DIG_P3_MSB			0x93
+#define BME280_COMPENSATION_PARAMETER_DIG_P4_LSB			0x94
+#define BME280_COMPENSATION_PARAMETER_DIG_P4_MSB			0x95
+#define BME280_COMPENSATION_PARAMETER_DIG_P5_LSB			0x96
+#define BME280_COMPENSATION_PARAMETER_DIG_P5_MSB			0x97
+#define BME280_COMPENSATION_PARAMETER_DIG_P6_LSB			0x98
+#define BME280_COMPENSATION_PARAMETER_DIG_P6_MSB			0x99
+#define BME280_COMPENSATION_PARAMETER_DIG_P7_LSB			0x9A
+#define BME280_COMPENSATION_PARAMETER_DIG_P7_MSB			0x9B
+#define BME280_COMPENSATION_PARAMETER_DIG_P8_LSB			0x9C
+#define BME280_COMPENSATION_PARAMETER_DIG_P8_MSB			0x9D
+#define BME280_COMPENSATION_PARAMETER_DIG_P9_LSB			0x9E
+#define BME280_COMPENSATION_PARAMETER_DIG_P9_MSB			0x9F
+#define BME280_COMPENSATION_PARAMETER_DIG_H1				0xA1
+#define BME280_COMPENSATION_PARAMETER_DIG_H2_LSB			0xE1
+#define BME280_COMPENSATION_PARAMETER_DIG_H2_MSB			0xE2
+#define BME280_COMPENSATION_PARAMETER_DIG_H3				0xE3
+#define BME280_COMPENSATION_PARAMETER_DIG_H4_MSB			0xE4
+#define BME280_COMPENSATION_PARAMETER_DIG_H4_LSB			0xE5
+#define BME280_COMPENSATION_PARAMETER_DIG_H5_MSB			0xE6
+#define BME280_COMPENSATION_PARAMETER_DIG_H5_LSB			0xE5
+#define BME280_COMPENSATION_PARAMETER_DIG_H6				0xE7
+
+#ifdef BME280_USE_SSI
+typedef enum BME280_CHIP_SELECT_OR_UNSELECT {
+    BME280_CHIP_UNSELECT = HIGH,
+    BME280_CHIP_SELECT   = LOW
+}BME280_CHIP_SELECT_OR_UNSELECT ;
+#endif
+
+typedef struct BME280_COMP_PARAMS {
+    uint16_t dig_T1;
+    int16_t	dig_T2;
+    int16_t	dig_T3;
+
+    uint16_t dig_P1;
+    int16_t dig_P2;
+    int16_t dig_P3;
+    int16_t dig_P4;
+    int16_t dig_P5;
+    int16_t dig_P6;
+    int16_t dig_P7;
+    int16_t dig_P8;
+    int16_t dig_P9;
+
+    uint8_t dig_H1;
+    int16_t dig_H2;
+    uint8_t dig_H3;
+    int16_t dig_H4;
+    int16_t dig_H5;
+    uint8_t dig_H6;
+}BME280_COMP_PARAMS ;
+
+typedef struct BME280 {
+
+    uint8_t rawDataArray[8];
+    int32_t t_fine;
+    float temperature;
+    float pressure;
+    float altitude;
+    float relativeHumidity;
+#ifdef BME280_USE_I2C
+    I2CDEVICE BME280I2CDevice;
+#endif
+#ifdef BME280_USE_SSI
+    SSIDEVICE BME280SSIDevice ;
+    GPIO chipSelectPin ;
+#endif
+    BME280_COMP_PARAMS CompParams;
+}BME280 ;
+
+
+
+
+
+
+
+BME280* initialize_BME280(BME280* BME280DevicePointer,
+#ifdef BME280_USE_SSI
+                          char SSIPeripheralLetter,
+                          uint8_t SSIPeripheralNumber,
+                          char chipSelectPinPortLetter,
+                          uint8_t chipSelectPinNumber,
+#endif
+#ifdef BME280_USE_I2C
+                          uint8_t I2CBaseNumber,
+#endif
+                          UARTDEVICE* UARTDevicePointer) ;
+uint8_t readWHOAMIValue_BME280(BME280* BME280DevicePointer, UARTDEVICE* UARTDevicePointer) ;
+
+
+void reset_BME280(BME280* BME280DevicePointer, uint8_t * sent1, uint8_t* sent2);
+
+void readRawData_BME280(BME280* BME280DevicePointer) ;
+
+float getTemperature_BME280(BME280* BME280DevicePointer, UARTDEVICE* UARTDevicePointer) ;
+
+static void readCompensationParameters(BME280* BME280DevicePointer,UARTDEVICE* UARTDevicePointer);
+
+
+float getPressure_BME280(BME280* BME280DevicePointer, UARTDEVICE* UARTDevicePointer);
+
+float getRelativeHumidity_BME280(BME280* BME280DevicePointer, UARTDEVICE* UARTDevicePointer);
+
+float getAltitude_BME280(BME280* BME280DevicePointer, UARTDEVICE* UARTDevicePointer) ;
+
+
+void getPHAT_BME280(BME280* BME280DevicePointer, UARTDEVICE* UARTDevicePointer) ;
+
+
+static uint8_t readRegister_BME280(BME280* BME280DevicePointer, uint8_t registerAddress) ;
+
+static uint8_t* readRegisters_BME280(BME280* BME280DevicePointer, uint8_t startRegisterAddress, uint8_t numOfRegisters, uint8_t * dataArray) ;
+
+
+static void writeRegister_BME280(BME280* BME280DevicePointer, uint8_t registerAddress, uint8_t registerValue) ;
+
+#ifdef BME280_USE_SSI
+static void setChipSelectPinState_BME280(BME280* BME280DevicePointer, BME280_CHIP_SELECT_OR_UNSELECT chipSelectState) ;
+#endif
+
+#endif /* BME280_H_ */
